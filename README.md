@@ -7,19 +7,21 @@ A cross-platform PDF compression utility that reduces PDF file sizes while prese
 - **Ghostscript-powered compression** - Industry-standard PDF optimization
 - **Text stays selectable** - No more rasterization; vectors and text preserved
 - **Better compression ratios** - Up to 90% file size reduction
-- **Industry-standard presets** - Screen, E-book, Printer, Prepress
+- **Estimated size preview** - See projected file size before converting
+
+![PDFConverter Screenshot](screenshots/conversion-view.png)
 
 ## Features
 
 - **Drag-and-drop** PDF file handling
 - **Four compression presets** with different quality/size tradeoffs:
-  - **Screen** (72 DPI) - Smallest file, for on-screen viewing
-  - **E-book** (150 DPI) - Good quality for e-readers
-  - **Printer** (300 DPI) - High quality for printing
-  - **Prepress** - Maximum quality for commercial print
+  - **Small** (72 DPI) - Smallest file, for on-screen viewing
+  - **Medium** (150 DPI) - Good quality for e-readers
+  - **Large** (300 DPI) - High quality for printing
+  - **X-Large** - Maximum quality for commercial print
 - Text remains searchable and selectable after compression
-- Real-time progress indication
-- Automatic file naming with preset suffix (e.g., `document-ebook.pdf`)
+- Estimated output size shown for each preset
+- Automatic file naming with preset suffix (e.g., `document-medium-150dpi.pdf`)
 
 ## Requirements
 
