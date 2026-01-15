@@ -3,7 +3,7 @@
 # Exit on error
 set -e
 
-echo "=== Building PDFConverter v2.0 ==="
+echo "=== Building PDFConverter v2.5 ==="
 
 # Build the Swift package
 echo "Compiling Swift code..."
@@ -47,9 +47,9 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.0</string>
+    <string>2.5</string>
     <key>CFBundleVersion</key>
-    <string>2.0.0</string>
+    <string>2.5.0</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
@@ -57,7 +57,7 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
     <key>CFBundleDisplayName</key>
     <string>PDFConverter</string>
     <key>CFBundleGetInfoString</key>
-    <string>PDF Converter v2.0 - Powered by Ghostscript</string>
+    <string>PDF Converter v2.5 - Powered by Ghostscript</string>
 </dict>
 </plist>
 EOF

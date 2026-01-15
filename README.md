@@ -2,12 +2,15 @@
 
 A cross-platform PDF compression utility that reduces PDF file sizes while preserving text selectability. Available for macOS and Windows.
 
-## What's New in v2.0
+## What's New in v2.5
 
 - **Ghostscript-powered compression** - Industry-standard PDF optimization
 - **Text stays selectable** - No more rasterization; vectors and text preserved
 - **Better compression ratios** - Up to 90% file size reduction
 - **Estimated size preview** - See projected file size before converting
+- **Refined UI** - Clean, native macOS look with system colors
+
+![PDFConverter Screenshot](screenshots/conversion-view-v2.5.png)
 
 ## Features
 

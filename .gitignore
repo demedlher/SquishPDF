@@ -34,5 +34,6 @@ icon.svg
 # Sample/test files
 sample-docs/
 
-# Screenshots (stored locally only)
-screenshots/
+# Screenshots (stored locally only, except for README)
+screenshots/*
+!screenshots/conversion-view-v2.5.png
