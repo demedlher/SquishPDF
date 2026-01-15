@@ -9,8 +9,6 @@ A cross-platform PDF compression utility that reduces PDF file sizes while prese
 - **Better compression ratios** - Up to 90% file size reduction
 - **Estimated size preview** - See projected file size before converting
 
-![PDFConverter Screenshot](screenshots/conversion-view.png)
-
 ## Features
 
 - **Drag-and-drop** PDF file handling
