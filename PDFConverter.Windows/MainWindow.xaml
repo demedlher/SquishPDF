@@ -1,0 +1,120 @@
+<Window
+    x:Class="PDFConverter.Windows.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PDFConverter.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="24,20">
+        <StackPanel Spacing="24">
+            <!-- Drop Zone -->
+            <Border
+                x:Name="DropZone"
+                Height="160"
+                BorderBrush="{ThemeResource SystemAccentColor}"
+                BorderThickness="2"
+                CornerRadius="12"
+                AllowDrop="True"
+                DragOver="DropZone_DragOver"
+                Drop="DropZone_Drop">
+                <Border.BorderBrush>
+                    <SolidColorBrush Color="{ThemeResource SystemAccentColor}" Opacity="0.6"/>
+                </Border.BorderBrush>
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderStyle" Value="Dashed"/>
+                    </Style>
+                </Border.Style>
+                
+                <StackPanel
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="12">
+                    <FontIcon
+                        Glyph="&#xE8A5;"
+                        FontSize="40"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock
+                        Text="drag &amp; drop your PDF here"
+                        Style="{ThemeResource SubtitleTextBlockStyle}"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Compression Options -->
+            <StackPanel Spacing="16">
+                <TextBlock
+                    Text="Compression level"
+                    Style="{ThemeResource SubtitleTextBlockStyle}"/>
+
+                <StackPanel Spacing="12">
+                    <!-- Small -->
+                    <RadioButton
+                        x:Name="SmallOption"
+                        GroupName="CompressionOptions"
+                        Checked="CompressionOption_Checked">
+                        <StackPanel>
+                            <TextBlock
+                                Text="Small"
+                                Style="{ThemeResource BodyTextBlockStyle}"/>
+                            <TextBlock
+                                Text="Lower quality, smallest file size, 72 DPI"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <!-- Medium -->
+                    <RadioButton
+                        x:Name="MediumOption"
+                        GroupName="CompressionOptions"
+                        IsChecked="True"
+                        Checked="CompressionOption_Checked">
+                        <StackPanel>
+                            <TextBlock
+                                Text="Medium"
+                                Style="{ThemeResource BodyTextBlockStyle}"/>
+                            <TextBlock
+                                Text="Balanced quality and file size, 150 DPI"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <!-- Large -->
+                    <RadioButton
+                        x:Name="LargeOption"
+                        GroupName="CompressionOptions"
+                        Checked="CompressionOption_Checked">
+                        <StackPanel>
+                            <TextBlock
+                                Text="Large"
+                                Style="{ThemeResource BodyTextBlockStyle}"/>
+                            <TextBlock
+                                Text="Higher quality, larger file size, 300 DPI"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Progress and Error -->
+            <ProgressRing
+                x:Name="ProgressIndicator"
+                Width="20"
+                Height="20"
+                Visibility="Collapsed"/>
+            
+            <TextBlock
+                x:Name="ErrorText"
+                Style="{ThemeResource BodyTextBlockStyle}"
+                Foreground="{ThemeResource SystemErrorTextColor}"
+                TextWrapping="Wrap"
+                TextAlignment="Center"
+                Visibility="Collapsed"/>
+        </StackPanel>
+    </Grid>
+</Window> 

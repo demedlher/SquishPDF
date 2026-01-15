@@ -5,8 +5,31 @@
 xcuserdata/
 DerivedData/
 .swiftpm/
-.vscode/
+.netrc
 *.app
 *.dmg
+*.pkg
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
 icon.png
-icon.svg 
+icon.svg
+
+# Sample/test files
+sample-docs/
