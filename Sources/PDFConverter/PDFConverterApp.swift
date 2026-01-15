@@ -8,10 +8,10 @@ struct PDFConverterApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 400, maxWidth: 600, minHeight: 520)
+                .frame(minWidth: 400, maxWidth: 600, minHeight: 640)
         }
         .windowResizability(.contentSize)
-        .defaultSize(width: 400, height: 580)
+        .defaultSize(width: 400, height: 680)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: true))
     }
@@ -21,7 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let window = NSApplication.shared.windows.first {
             window.title = "PDF Converter"
-            window.setContentSize(NSSize(width: 400, height: 580))
+            window.setContentSize(NSSize(width: 400, height: 680))
             window.center()
             window.makeKeyAndOrderFront(nil)
         }

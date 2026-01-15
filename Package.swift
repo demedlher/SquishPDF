@@ -2,24 +2,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "DemedPlayer",
+    name: "PDFConverter",
     platforms: [
         .macOS(.v13)
     ],
     products: [
         .executable(
-            name: "DemedPlayer",
-            targets: ["DemedPlayer"]
+            name: "PDFConverter",
+            targets: ["PDFConverter"]
         )
     ],
     dependencies: [],
     targets: [
         .executableTarget(
-            name: "DemedPlayer",
+            name: "PDFConverter",
             dependencies: [],
+            path: "Sources/PDFConverter",
             swiftSettings: [
                 .unsafeFlags(["-framework", "AppKit"])
             ]
         )
     ]
-) 
+)

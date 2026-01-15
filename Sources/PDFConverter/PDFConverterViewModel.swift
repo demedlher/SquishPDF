@@ -1,140 +1,149 @@
 import SwiftUI
-import PDFKit
 import UniformTypeIdentifiers
-import CoreGraphics
-
-enum Resolution {
-    case small
-    case medium
-    case large
-    case custom(Int)
-    
-    var dpi: Int {
-        switch self {
-        case .small:
-            return 72
-        case .medium:
-            return 150
-        case .large:
-            return 300
-        case .custom(let value):
-            return max(50, min(300, value))
-        }
-    }
-}
 
 class PDFConverterViewModel: ObservableObject {
-    @Published var selectedResolution: Resolution = .medium
+    @Published var selectedPreset: GhostscriptPreset = .ebook
     @Published var isConverting = false
     @Published var lastError: String?
-    
+    @Published var progress: GhostscriptProgress?
+    @Published var conversionSuccess: String?
+
+    // File info
+    @Published var droppedFileURL: URL?
+    @Published var originalFileSize: Int64 = 0
+    @Published var originalFileName: String = ""
+
+    private let ghostscriptService = GhostscriptService()
+
+    /// Check if Ghostscript is available
+    var isGhostscriptAvailable: Bool {
+        ghostscriptService.isAvailable()
+    }
+
+    /// Check if a file is ready for conversion
+    var hasFile: Bool {
+        droppedFileURL != nil
+    }
+
+    /// Format file size for display
+    static func formatFileSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
+    }
+
+    /// Get estimated size range string for a preset
+    func estimatedSizeString(for preset: GhostscriptPreset) -> String {
+        guard originalFileSize > 0 else { return "" }
+        let range = preset.estimatedSizeRange(for: originalFileSize)
+        let minStr = Self.formatFileSize(range.min)
+        let maxStr = Self.formatFileSize(range.max)
+        if minStr == maxStr {
+            return minStr
+        }
+        return "\(minStr) to \(maxStr)"
+    }
+
     func handleDroppedFiles(_ providers: [NSItemProvider]) {
         providers.forEach { provider in
             if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
-                provider.loadItem(forTypeIdentifier: UTType.pdf.identifier, options: nil) { (urlData, error) in
+                provider.loadItem(forTypeIdentifier: UTType.pdf.identifier, options: nil) { [weak self] (urlData, error) in
                     if let error = error {
                         DispatchQueue.main.async {
-                            self.lastError = error.localizedDescription
+                            self?.lastError = error.localizedDescription
                         }
                         return
                     }
-                    
+
                     guard let url = urlData as? URL else { return }
-                    
+
                     DispatchQueue.main.async {
-                        self.convertPDF(at: url)
+                        self?.setFile(url)
                     }
                 }
             }
         }
     }
-    
-    private func convertPDF(at url: URL) {
-        guard let pdfDocument = PDFDocument(url: url) else {
-            self.lastError = "Could not open PDF document"
+
+    private func setFile(_ url: URL) {
+        // Clear previous state
+        lastError = nil
+        conversionSuccess = nil
+
+        // Store file info
+        droppedFileURL = url
+        originalFileName = url.lastPathComponent
+
+        // Get file size
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+           let size = attrs[.size] as? Int64 {
+            originalFileSize = size
+        } else {
+            originalFileSize = 0
+        }
+    }
+
+    /// Clear the current file
+    func clearFile() {
+        droppedFileURL = nil
+        originalFileSize = 0
+        originalFileName = ""
+        lastError = nil
+        conversionSuccess = nil
+    }
+
+    /// Start conversion (called when user clicks Convert button)
+    func convert() {
+        guard let url = droppedFileURL else {
+            lastError = "No file selected"
             return
         }
-        
-        self.isConverting = true
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            let dpi = self.selectedResolution.dpi
-            
-            // Create new filename with DPI suffix
-            let originalFilename = url.deletingPathExtension().lastPathComponent
-            let newFilename = "\(originalFilename)-\(dpi)dpi.pdf"
-            let newPath = url.deletingLastPathComponent().appendingPathComponent(newFilename)
-            
-            // Create new PDF with modified resolution
-            if let data = self.createPDFData(from: pdfDocument, withDPI: dpi) {
-                do {
-                    try data.write(to: newPath)
-                    DispatchQueue.main.async {
-                        self.isConverting = false
-                        self.lastError = nil
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        self.lastError = "Failed to save converted PDF: \(error.localizedDescription)"
-                        self.isConverting = false
-                    }
+
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            lastError = "PDF file not found"
+            return
+        }
+
+        isConverting = true
+        lastError = nil
+        progress = nil
+        conversionSuccess = nil
+
+        // Generate output filename with preset suffix (e.g., doc-medium-150dpi.pdf)
+        let originalFilename = url.deletingPathExtension().lastPathComponent
+        let newFilename = "\(originalFilename)-\(selectedPreset.filenameSuffix).pdf"
+        let outputURL = url.deletingLastPathComponent().appendingPathComponent(newFilename)
+
+        Task {
+            do {
+                try await ghostscriptService.compressPDF(
+                    inputURL: url,
+                    outputURL: outputURL,
+                    preset: selectedPreset
+                ) { [weak self] progress in
+                    self?.progress = progress
                 }
-            } else {
-                DispatchQueue.main.async {
-                    self.lastError = "Failed to create converted PDF"
+
+                // Get compressed file size
+                let compressedSize = try FileManager.default.attributesOfItem(atPath: outputURL.path)[.size] as? Int64 ?? 0
+
+                // Calculate reduction percentage
+                let reduction = originalFileSize > 0 ? Int((1.0 - Double(compressedSize) / Double(originalFileSize)) * 100) : 0
+                let compressedSizeStr = Self.formatFileSize(compressedSize)
+
+                await MainActor.run {
                     self.isConverting = false
+                    self.progress = nil
+                    self.conversionSuccess = "Saved: \(newFilename)\n\(compressedSizeStr) (\(reduction)% smaller)"
+                }
+            } catch {
+                await MainActor.run {
+                    self.lastError = error.localizedDescription
+                    self.isConverting = false
+                    self.progress = nil
                 }
             }
         }
     }
-    
-    private func createPDFData(from document: PDFDocument, withDPI dpi: Int) -> Data? {
-        let pdfData = NSMutableData()
-        guard let consumer = CGDataConsumer(data: pdfData) else { return nil }
-        
-        // Create PDF context
-        guard let pdfContext = CGContext(consumer: consumer, mediaBox: nil, nil) else { return nil }
-        
-        // Process each page
-        for i in 0..<document.pageCount {
-            guard let page = document.page(at: i) else { continue }
-            let pageBounds = page.bounds(for: .mediaBox)
-            
-            // Calculate dimensions for the new resolution
-            let scale = CGFloat(dpi) / 72.0
-            let width = Int(ceil(pageBounds.width * scale))
-            let height = Int(ceil(pageBounds.height * scale))
-            
-            // Create bitmap context for rendering
-            guard let bitmapContext = CGContext(data: nil,
-                                              width: width,
-                                              height: height,
-                                              bitsPerComponent: 8,
-                                              bytesPerRow: 0,
-                                              space: CGColorSpaceCreateDeviceRGB(),
-                                              bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { continue }
-            
-            // Set white background
-            bitmapContext.setFillColor(CGColor.white)
-            bitmapContext.fill(CGRect(x: 0, y: 0, width: width, height: height))
-            
-            // Scale and render the page
-            bitmapContext.scaleBy(x: scale, y: scale)
-            page.draw(with: .mediaBox, to: bitmapContext)
-            
-            // Get the rendered image
-            guard let renderedImage = bitmapContext.makeImage() else { continue }
-            
-            // Create a new PDF page with proper dimensions
-            var mediaBox = CGRect(x: 0, y: 0, width: CGFloat(width) / scale, height: CGFloat(height) / scale)
-            pdfContext.beginPage(mediaBox: &mediaBox)
-            
-            // Draw the rendered image
-            pdfContext.draw(renderedImage, in: mediaBox)
-            pdfContext.endPage()
-        }
-        
-        pdfContext.closePDF()
-        return pdfData as Data
-    }
-} 
+}

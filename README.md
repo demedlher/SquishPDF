@@ -1,27 +1,31 @@
 # PDFConverter
 
-A cross-platform PDF compression utility that reduces PDF file sizes while maintaining quality. Available for macOS and Windows.
+A cross-platform PDF compression utility that reduces PDF file sizes while preserving text selectability. Available for macOS and Windows.
+
+## What's New in v2.0
+
+- **Ghostscript-powered compression** - Industry-standard PDF optimization
+- **Text stays selectable** - No more rasterization; vectors and text preserved
+- **Better compression ratios** - Up to 90% file size reduction
+- **Industry-standard presets** - Screen, E-book, Printer, Prepress
 
 ## Features
 
 - **Drag-and-drop** PDF file handling
-- **Three compression levels** with different quality/size tradeoffs:
-  - **Small** (72 DPI) - Lowest quality, smallest file size
-  - **Medium** (150 DPI) - Balanced quality and size
-  - **Large** (300 DPI) - Highest quality, larger file size
-- Real-time progress indication during conversion
-- Automatic file naming with DPI suffix (e.g., `document-150dpi.pdf`)
-- Cross-platform support (macOS native + Windows)
-
-## Screenshots
-
-![PDFConverter UI](https://img.shields.io/badge/UI-Drag%20%26%20Drop-blue)
+- **Four compression presets** with different quality/size tradeoffs:
+  - **Screen** (72 DPI) - Smallest file, for on-screen viewing
+  - **E-book** (150 DPI) - Good quality for e-readers
+  - **Printer** (300 DPI) - High quality for printing
+  - **Prepress** - Maximum quality for commercial print
+- Text remains searchable and selectable after compression
+- Real-time progress indication
+- Automatic file naming with preset suffix (e.g., `document-ebook.pdf`)
 
 ## Requirements
 
 ### macOS
 - macOS 13.0 or later
-- Swift 5.9 or later (for building from source)
+- Ghostscript (bundled in app, or install via `brew install ghostscript`)
 
 ### Windows
 - Windows 10 (build 17763.0) or later
@@ -36,11 +40,12 @@ Download the latest DMG from the [Releases](https://github.com/demedlher/PDFConv
 Or build from source:
 
 ```bash
-# Clone the repository
+# Install Ghostscript (required for bundling)
+brew install ghostscript
+
+# Clone and build
 git clone https://github.com/demedlher/PDFConverter.git
 cd PDFConverter
-
-# Build and create app bundle
 ./build_app.sh
 ```
 
@@ -58,9 +63,17 @@ dotnet run
 
 1. Launch PDFConverter
 2. Drag and drop a PDF file onto the drop zone
-3. Select your desired compression level (Small, Medium, or Large)
-4. Click "Convert"
-5. The compressed PDF will be saved in the same directory as the original with a DPI suffix
+3. Select your desired compression preset
+4. The compressed PDF will be saved in the same directory with a preset suffix
+
+## Compression Comparison
+
+| Preset | Typical Reduction | Best For |
+|--------|-------------------|----------|
+| Screen | 80-90% | Email attachments, web viewing |
+| E-book | 60-70% | E-readers, tablets |
+| Printer | 40-50% | Office printing |
+| Prepress | 10-20% | Professional printing |
 
 ## Project Structure
 
@@ -69,50 +82,51 @@ PDFConverter/
 ├── Sources/PDFConverter/          # macOS Swift implementation
 │   ├── PDFConverterApp.swift      # App entry point
 │   ├── ContentView.swift          # Main UI
-│   └── PDFConverterViewModel.swift # Conversion logic
+│   ├── PDFConverterViewModel.swift # Conversion orchestration
+│   └── GhostscriptService.swift   # Ghostscript wrapper
 ├── PDFConverter.Windows/          # Windows C# implementation
-│   ├── MainWindow.xaml            # UI layout
-│   └── MainWindow.xaml.cs         # UI logic and PDF processing
 ├── Package.swift                  # Swift package manifest
 ├── build_app.sh                   # macOS app bundle builder
+├── bundle_ghostscript.sh          # Ghostscript bundling script
 ├── create_dmg.sh                  # DMG installer creator
 └── create_icon.sh                 # App icon generator
 ```
 
 ## Tech Stack
 
-### macOS
+### macOS (v2.0)
 - **Language**: Swift 5.9+
 - **Framework**: SwiftUI
-- **PDF Processing**: PDFKit, CoreGraphics
+- **PDF Processing**: Ghostscript (bundled)
 - **Minimum OS**: macOS 13.0
 
 ### Windows
 - **Language**: C# (.NET 7.0)
 - **Framework**: WinUI 3 / Windows App SDK 1.4
 - **PDF Processing**: PdfSharp 1.50.5147
-- **Minimum OS**: Windows 10 (17763.0)
 
 ## How It Works
 
-The converter renders each PDF page as a bitmap image at the specified DPI resolution, then rebuilds the PDF with these rendered images. This process reduces file size by:
+v2.0 uses Ghostscript's PDF optimization engine which:
+- Downsamples images to target DPI
+- Compresses embedded fonts
+- Removes unused objects
+- Preserves text, vectors, and document structure
 
-- Downsampling high-resolution images
-- Flattening complex vector graphics
-- Applying compression to the resulting images
+Unlike v1.0's rasterization approach, text remains fully selectable and searchable.
 
 ## Building from Source
 
 ### macOS
 
 ```bash
-# Build release version
+# Prerequisites
+brew install ghostscript
+
+# Build
 swift build -c release
 
-# Run directly
-swift run PDFConverter
-
-# Build complete app bundle with DMG
+# Create app bundle with bundled Ghostscript
 ./build_app.sh
 ```
 
@@ -126,7 +140,8 @@ dotnet build -c Release
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+- **PDFConverter**: MIT License - see [LICENSE](LICENSE)
+- **Ghostscript**: AGPL-3.0 - see [Ghostscript licensing](https://www.ghostscript.com/licensing/)
 
 ## Author
 
