@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Set variables
-APP_NAME="PDFConverter"
+APP_NAME="SquishPDF"
 DMG_NAME="${APP_NAME}_Installer"
 DMG_TEMP_NAME="${DMG_NAME}_temp.dmg"
 DMG_FINAL_NAME="${DMG_NAME}.dmg"
-VOLUME_NAME="PDF Converter"
+VOLUME_NAME="SquishPDF"
 
 # Create temporary directory for DMG contents
 rm -rf dmg_contents
@@ -16,12 +16,12 @@ cat << EOF > dmg_contents/.background/background.svg
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="540" height="380" xmlns="http://www.w3.org/2000/svg">
     <rect width="540" height="380" fill="#FFFFFF"/>
-    <text x="270" y="340" 
-          font-family="Helvetica" 
-          font-size="14" 
-          text-anchor="middle" 
+    <text x="270" y="340"
+          font-family="Helvetica"
+          font-size="14"
+          text-anchor="middle"
           fill="#666666">
-        Drag PDFConverter to the Applications folder to install
+        Drag SquishPDF to the Applications folder to install
     </text>
 </svg>
 EOF
@@ -76,4 +76,4 @@ hdiutil convert "${DMG_TEMP_NAME}" -format UDZO -imagekey zlib-level=9 -o "${DMG
 rm -f "${DMG_TEMP_NAME}"
 
 # Clean up
-rm -rf dmg_contents 
+rm -rf dmg_contents

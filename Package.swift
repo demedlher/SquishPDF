@@ -2,22 +2,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "PDFConverter",
+    name: "SquishPDF",
     platforms: [
         .macOS(.v13)
     ],
     products: [
         .executable(
-            name: "PDFConverter",
-            targets: ["PDFConverter"]
+            name: "SquishPDF",
+            targets: ["SquishPDF"]
         )
     ],
     dependencies: [],
     targets: [
         .executableTarget(
-            name: "PDFConverter",
+            name: "SquishPDF",
             dependencies: [],
-            path: "Sources/PDFConverter",
+            path: "Sources/SquishPDF",
             swiftSettings: [
                 .unsafeFlags(["-framework", "AppKit"])
             ]

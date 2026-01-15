@@ -36,4 +36,5 @@ sample-docs/
 
 # Screenshots (stored locally only, except for README)
 screenshots/*
-!screenshots/conversion-view-v2.5.png
+!screenshots/squishPDF-conversion-light-v2.7.png
+!screenshots/squishPDF-conversion-dark-v2.7.png

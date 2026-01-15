@@ -3,14 +3,14 @@
 # Exit on error
 set -e
 
-echo "=== Building PDFConverter v2.5 ==="
+echo "=== Building SquishPDF v2.7 ==="
 
 # Build the Swift package
 echo "Compiling Swift code..."
 swift build -c release
 
 # Create app bundle structure
-APP_NAME="PDFConverter"
+APP_NAME="SquishPDF"
 APP_BUNDLE="$APP_NAME.app"
 CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -26,7 +26,7 @@ mkdir -p "$RESOURCES_DIR"
 mkdir -p "$FRAMEWORKS_DIR"
 
 # Copy executable
-cp .build/release/PDFConverter "$MACOS_DIR/"
+cp .build/release/SquishPDF "$MACOS_DIR/"
 
 # Create Info.plist
 cat > "$CONTENTS_DIR/Info.plist" << EOF
@@ -35,29 +35,29 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>PDFConverter</string>
+    <string>SquishPDF</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIconName</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.example.pdfconverter</string>
+    <string>com.demedlher.squishpdf</string>
     <key>CFBundleName</key>
-    <string>PDFConverter</string>
+    <string>SquishPDF</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.5</string>
+    <string>2.7</string>
     <key>CFBundleVersion</key>
-    <string>2.5.0</string>
+    <string>2.7.0</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>CFBundleDisplayName</key>
-    <string>PDFConverter</string>
+    <string>SquishPDF</string>
     <key>CFBundleGetInfoString</key>
-    <string>PDF Converter v2.5 - Powered by Ghostscript</string>
+    <string>SquishPDF v2.7 - Powered by Ghostscript</string>
 </dict>
 </plist>
 EOF
@@ -75,7 +75,7 @@ mkdir -p "$RESOURCES_DIR/LICENSES"
 
 # Copy MIT license
 if [ -f "LICENSE" ]; then
-    cp LICENSE "$RESOURCES_DIR/LICENSES/PDFConverter-LICENSE.txt"
+    cp LICENSE "$RESOURCES_DIR/LICENSES/SquishPDF-LICENSE.txt"
 fi
 
 # Add Ghostscript license notice
@@ -96,7 +96,7 @@ chmod 755 "$CONTENTS_DIR"
 chmod 755 "$MACOS_DIR"
 chmod 755 "$RESOURCES_DIR"
 chmod 755 "$FRAMEWORKS_DIR"
-chmod 755 "$MACOS_DIR/PDFConverter"
+chmod 755 "$MACOS_DIR/SquishPDF"
 chmod 644 "$CONTENTS_DIR/Info.plist"
 
 echo ""
@@ -106,4 +106,4 @@ echo "Creating DMG installer..."
 echo ""
 echo "=== Build complete! ==="
 echo "App bundle: $APP_BUNDLE"
-echo "DMG installer: PDFConverter_Installer.dmg"
+echo "DMG installer: SquishPDF_Installer.dmg"

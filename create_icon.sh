@@ -1,47 +1,19 @@
 #!/bin/bash
 
-# Create temporary SVG file
-cat << EOF > icon.svg
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
-    <!-- Background with rounded corners -->
-    <rect x="0" y="0" width="1024" height="1024" rx="180" ry="180" fill="#E8E8E8"/>
-    
-    <!-- PDF text with slight shadow for depth -->
-    <text x="512" y="612" 
-          font-family="Helvetica-Bold, Helvetica" 
-          font-size="380" 
-          font-weight="bold" 
-          fill="#FF3B30" 
-          text-anchor="middle"
-          filter="url(#shadow)">
-        PDF
-    </text>
-    
-    <!-- Define shadow filter -->
-    <defs>
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="20"/>
-            <feOffset dx="0" dy="10" result="offsetblur"/>
-            <feComponentTransfer>
-                <feFuncA type="linear" slope="0.3"/>
-            </feComponentTransfer>
-            <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        </filter>
-    </defs>
-</svg>
-EOF
+# Use the custom SquishPDF icon
+SOURCE_ICON="images/SquishPDF-icon-square.png"
+
+if [ ! -f "$SOURCE_ICON" ]; then
+    echo "Error: Icon source not found at $SOURCE_ICON"
+    exit 1
+fi
 
 # Create iconset directory
 rm -rf AppIcon.iconset
 mkdir AppIcon.iconset
 
-# Convert SVG to PNG using native macOS commands
-/usr/bin/qlmanage -t -s 1024 -o . icon.svg
-mv icon.svg.png icon.png
+# Resize to 1024x1024 as base
+sips -z 1024 1024 "$SOURCE_ICON" --out icon.png
 
 # Generate different icon sizes with high quality
 sips -s format png -z 16 16     icon.png --out AppIcon.iconset/icon_16x16.png
@@ -59,15 +31,17 @@ sips -s format png -z 1024 1024 icon.png --out AppIcon.iconset/icon_512x512@2x.p
 iconutil --convert icns --output AppIcon.icns AppIcon.iconset
 
 # Ensure Resources directory exists
-mkdir -p PDFConverter.app/Contents/Resources
+mkdir -p SquishPDF.app/Contents/Resources
 
 # Install icon and set permissions
-cp AppIcon.icns PDFConverter.app/Contents/Resources/
-chmod 644 PDFConverter.app/Contents/Resources/AppIcon.icns
+cp AppIcon.icns SquishPDF.app/Contents/Resources/
+chmod 644 SquishPDF.app/Contents/Resources/AppIcon.icns
 
 # Touch the app bundle to refresh
-touch PDFConverter.app
+touch SquishPDF.app
 
 # Clean up
-rm -f icon.png icon.svg
-rm -rf AppIcon.iconset 
+rm -f icon.png
+rm -rf AppIcon.iconset
+
+echo "Icon created successfully from $SOURCE_ICON"
