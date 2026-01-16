@@ -80,6 +80,7 @@ done
 TRANSITIVE_LIBS=(
     "/opt/homebrew/opt/zstd/lib/libzstd.1.dylib"
     "/opt/homebrew/opt/xz/lib/liblzma.5.dylib"
+    "/opt/homebrew/opt/lz4/lib/liblz4.1.dylib"
     "/opt/homebrew/opt/webp/lib/libwebp.7.dylib"
     "/opt/homebrew/opt/giflib/lib/libgif.7.dylib"
     "/opt/homebrew/opt/brotli/lib/libbrotlidec.1.dylib"
