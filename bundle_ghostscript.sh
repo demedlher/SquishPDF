@@ -4,7 +4,7 @@ set -e
 # Configuration
 GS_VERSION="10.05.0_1"
 GS_CELLAR="/opt/homebrew/Cellar/ghostscript/${GS_VERSION}"
-APP_BUNDLE="PDFConverter.app"
+APP_BUNDLE="${1:-SquishPDF.app}"
 GS_DEST="$APP_BUNDLE/Contents/Frameworks/Ghostscript"
 
 echo "=== Bundling Ghostscript into app bundle ==="

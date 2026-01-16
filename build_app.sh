@@ -3,7 +3,30 @@
 # Exit on error
 set -e
 
-echo "=== Building SquishPDF v2.7 ==="
+# Parse arguments
+BUNDLE_GS=true
+DMG_SUFFIX=""
+
+for arg in "$@"; do
+    case $arg in
+        --no-gs)
+            BUNDLE_GS=false
+            DMG_SUFFIX="_Lean"
+            ;;
+        --with-gs)
+            BUNDLE_GS=true
+            DMG_SUFFIX=""
+            ;;
+        *)
+            ;;
+    esac
+done
+
+if [ "$BUNDLE_GS" = true ]; then
+    echo "=== Building SquishPDF v2.7 (with Ghostscript) ==="
+else
+    echo "=== Building SquishPDF v2.7 (Lean - without Ghostscript) ==="
+fi
 
 # Build the Swift package
 echo "Compiling Swift code..."
@@ -66,9 +89,13 @@ EOF
 echo "Generating app icon..."
 ./create_icon.sh
 
-# Bundle Ghostscript
-echo "Bundling Ghostscript..."
-./bundle_ghostscript.sh
+# Bundle Ghostscript (optional)
+if [ "$BUNDLE_GS" = true ]; then
+    echo "Bundling Ghostscript..."
+    ./bundle_ghostscript.sh "$APP_BUNDLE"
+else
+    echo "Skipping Ghostscript bundling (lean build)"
+fi
 
 # Create licenses directory
 mkdir -p "$RESOURCES_DIR/LICENSES"
@@ -101,9 +128,13 @@ chmod 644 "$CONTENTS_DIR/Info.plist"
 
 echo ""
 echo "Creating DMG installer..."
-./create_dmg.sh
+./create_dmg.sh "$DMG_SUFFIX"
 
 echo ""
 echo "=== Build complete! ==="
 echo "App bundle: $APP_BUNDLE"
-echo "DMG installer: SquishPDF_Installer.dmg"
+if [ "$BUNDLE_GS" = true ]; then
+    echo "DMG installer: SquishPDF_Installer.dmg (with Ghostscript bundled)"
+else
+    echo "DMG installer: SquishPDF_Installer_Lean.dmg (requires: brew install ghostscript)"
+fi

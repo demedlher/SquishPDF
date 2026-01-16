@@ -1,11 +1,25 @@
 #!/bin/bash
 
+# Accept optional suffix parameter (e.g., "_Lean" for lean build)
+SUFFIX="${1:-}"
+
 # Set variables
 APP_NAME="SquishPDF"
-DMG_NAME="${APP_NAME}_Installer"
+DMG_NAME="${APP_NAME}_Installer${SUFFIX}"
 DMG_TEMP_NAME="${DMG_NAME}_temp.dmg"
 DMG_FINAL_NAME="${DMG_NAME}.dmg"
 VOLUME_NAME="SquishPDF"
+
+# Force unmount any existing volumes with the same name
+for mount in /Volumes/SquishPDF*; do
+    if [ -d "$mount" ]; then
+        echo "Unmounting existing volume: $mount"
+        hdiutil detach "$mount" -force 2>/dev/null || true
+    fi
+done
+
+# Clean up any leftover temp DMGs
+rm -f "${DMG_TEMP_NAME}" "${DMG_FINAL_NAME}"
 
 # Create temporary directory for DMG contents
 rm -rf dmg_contents
