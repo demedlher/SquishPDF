@@ -181,6 +181,7 @@ class GhostscriptService {
             var env = ProcessInfo.processInfo.environment
             env["GS_LIB"] = [
                 resourcePath.appendingPathComponent("lib").path,
+                resourcePath.appendingPathComponent("Resource").appendingPathComponent("Init").path,
                 resourcePath.appendingPathComponent("Resource").path,
                 resourcePath.appendingPathComponent("fonts").path,
                 resourcePath.appendingPathComponent("iccprofiles").path
