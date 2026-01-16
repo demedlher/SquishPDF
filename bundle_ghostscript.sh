@@ -82,9 +82,12 @@ TRANSITIVE_LIBS=(
     "/opt/homebrew/opt/xz/lib/liblzma.5.dylib"
     "/opt/homebrew/opt/lz4/lib/liblz4.1.dylib"
     "/opt/homebrew/opt/webp/lib/libwebp.7.dylib"
+    "/opt/homebrew/opt/webp/lib/libwebpmux.3.dylib"
+    "/opt/homebrew/opt/webp/lib/libsharpyuv.0.dylib"
     "/opt/homebrew/opt/giflib/lib/libgif.7.dylib"
     "/opt/homebrew/opt/brotli/lib/libbrotlidec.1.dylib"
     "/opt/homebrew/opt/brotli/lib/libbrotlicommon.1.dylib"
+    "/opt/homebrew/opt/libb2/lib/libb2.1.dylib"
 )
 
 echo "Copying transitive dependencies..."
@@ -122,6 +125,24 @@ for libfile in "$GS_DEST/lib"/*.dylib; do
         for deplib in "${LIBS[@]}" "${TRANSITIVE_LIBS[@]}"; do
             deplibname=$(basename "$deplib")
             install_name_tool -change "$deplib" "@executable_path/../lib/$deplibname" "$libfile" 2>/dev/null || true
+        done
+
+        # Fix any remaining homebrew references (Cellar paths, non-versioned symlinks, etc.)
+        otool -L "$libfile" 2>/dev/null | grep -E "homebrew|/opt/" | awk '{print $1}' | while read -r dep; do
+            depbase=$(basename "$dep")
+            # Check if we have a matching library (with or without version numbers)
+            for bundled in "$GS_DEST/lib"/*.dylib; do
+                bundledname=$(basename "$bundled")
+                # Match libfoo.dylib to libfoo.X.dylib or exact match
+                libprefix="${depbase%.dylib}"
+                libprefix="${libprefix%.[0-9]*}"  # Remove version
+                bundledprefix="${bundledname%.dylib}"
+                bundledprefix="${bundledprefix%.[0-9]*}"
+                if [ "$libprefix" = "$bundledprefix" ] || [ "$depbase" = "$bundledname" ]; then
+                    install_name_tool -change "$dep" "@executable_path/../lib/$bundledname" "$libfile" 2>/dev/null || true
+                    break
+                fi
+            done
         done
     fi
 done
