@@ -38,7 +38,14 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
 
 ### macOS
 
-Download the latest DMG from the [Releases](https://github.com/demedlher/SquishPDF/releases) page, open it, and drag SquishPDF to your Applications folder.
+Download from the [Releases](https://github.com/demedlher/SquishPDF/releases) page:
+
+| Installer | Size | Description |
+|-----------|------|-------------|
+| `SquishPDF_Installer_Full.dmg` | ~22 MB | Includes Ghostscript — works out of the box |
+| `SquishPDF_Installer_Lean.dmg` | ~3 MB | Requires `brew install ghostscript` first |
+
+Open the DMG and drag SquishPDF to your Applications folder.
 
 > **macOS Security Notice**: This app is not signed with an Apple Developer certificate, so macOS will quarantine it by default. If you trust this app, remove the quarantine attribute by running:
 > ```bash
@@ -85,7 +92,8 @@ SquishPDF/
 │   ├── GhostscriptService.swift   # Ghostscript wrapper
 │   └── DesignTokens.swift         # UI design system
 ├── Package.swift                  # Swift package manifest
-├── build_app.sh                   # macOS app bundle builder
+├── build_app.sh                   # macOS app bundle builder (--with-gs/--no-gs)
+├── build_both.sh                  # Builds both Full and Lean installers
 ├── bundle_ghostscript.sh          # Ghostscript bundling script
 ├── create_dmg.sh                  # DMG installer creator
 └── create_icon.sh                 # App icon generator
@@ -117,11 +125,12 @@ Unlike rasterization approaches, text remains fully selectable and searchable.
 # Prerequisites
 brew install ghostscript
 
-# Build
-swift build -c release
+# Build both installers (Full + Lean)
+./build_both.sh
 
-# Create app bundle with bundled Ghostscript
-./build_app.sh
+# Or build individually:
+./build_app.sh --with-gs   # Full version with Ghostscript (~22 MB)
+./build_app.sh --no-gs     # Lean version without Ghostscript (~3 MB)
 ```
 
 ## License
