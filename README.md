@@ -40,6 +40,11 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
 
 Download the latest DMG from the [Releases](https://github.com/demedlher/SquishPDF/releases) page, open it, and drag SquishPDF to your Applications folder.
 
+> **macOS Security Notice**: This app is not signed with an Apple Developer certificate, so macOS will quarantine it by default. If you trust this app, remove the quarantine attribute by running:
+> ```bash
+> xattr -cr /Applications/SquishPDF.app
+> ```
+
 Or build from source:
 
 ```bash
