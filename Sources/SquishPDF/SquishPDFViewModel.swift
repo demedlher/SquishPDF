@@ -25,12 +25,19 @@ class SquishPDFViewModel: ObservableObject {
         droppedFileURL != nil
     }
 
-    /// Format file size for display
+    /// Format file size for display (whole numbers only)
     static func formatFileSize(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB, .useGB]
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
+        let kb = Double(bytes) / 1_000
+        let mb = kb / 1_000
+        let gb = mb / 1_000
+
+        if gb >= 1 {
+            return "\(Int(round(gb))) GB"
+        } else if mb >= 1 {
+            return "\(Int(round(mb))) MB"
+        } else {
+            return "\(Int(round(kb))) KB"
+        }
     }
 
     /// Get estimated size range string for a preset
@@ -42,7 +49,7 @@ class SquishPDFViewModel: ObservableObject {
         if minStr == maxStr {
             return minStr
         }
-        return "\(minStr) to \(maxStr)"
+        return "\(minStr) - \(maxStr)"
     }
 
     func handleDroppedFiles(_ providers: [NSItemProvider]) {

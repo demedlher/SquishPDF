@@ -37,7 +37,7 @@ struct CompressionButton: View {
                         Spacer()
                         if !estimatedSize.isEmpty {
                             VStack(alignment: .trailing, spacing: 1) {
-                                Text("new size:")
+                                Text("est. new size:")
                                     .font(.system(size: Design.Font.caption))
                                     .foregroundColor(.secondary)
                                 Text(estimatedSize)
@@ -88,7 +88,7 @@ struct ContentView: View {
             // Compression presets section
             VStack(alignment: .leading, spacing: Design.Space.sm) {
                 HStack {
-                    SectionHeader(title: "Compression preset")
+                    SectionHeader(title: "Compression presets")
 
                     Spacer()
 
