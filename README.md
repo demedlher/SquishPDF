@@ -19,11 +19,14 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
 ## Features
 
 - **Drag-and-drop** PDF file handling
-- **Four compression presets** with different quality/size tradeoffs:
+- **Seven compression presets** with different quality/size tradeoffs:
+  - **Tiny** (36 DPI) - Extreme compression, maximum size reduction
   - **Small** (72 DPI) - Smallest file, for on-screen viewing
   - **Medium** (150 DPI) - Good quality for e-readers
   - **Large** (300 DPI) - High quality for printing
   - **X-Large** - Maximum quality for commercial print
+  - **Grayscale** (150 DPI) - Converts to grayscale, great for graphics-heavy docs
+  - **Web** (72 DPI) - Web-optimized with stripped metadata and subset fonts
 - Text remains searchable and selectable after compression
 - Estimated output size shown for each preset
 - Automatic file naming with preset suffix (e.g., `document-medium-150dpi.pdf`)
@@ -76,10 +79,13 @@ cd SquishPDF
 
 | Preset | Typical Reduction | Best For |
 |--------|-------------------|----------|
-| Small | 80-90% | Email attachments, web viewing |
-| Medium | 60-70% | E-readers, tablets |
-| Large | 40-50% | Office printing |
-| X-Large | 10-20% | Professional printing |
+| Tiny | 90-98% | Maximum compression, low quality acceptable |
+| Small | 80-95% | Email attachments, web viewing |
+| Medium | 60-80% | E-readers, tablets |
+| Large | 30-60% | Office printing |
+| X-Large | 5-30% | Professional printing |
+| Grayscale | 70-90% | Graphics-heavy docs where color isn't needed |
+| Web | 80-95% | Web publishing, fast loading |
 
 ## Project Structure
 
