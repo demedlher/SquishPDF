@@ -7,12 +7,12 @@ struct SquishPDFApp: App {
 
     // Window dimensions aligned to 8-point grid
     private static let windowWidth: CGFloat = 424   // Close to golden ratio container
-    private static let windowHeight: CGFloat = 680  // Comfortable for content
+    private static let windowHeight: CGFloat = 856  // Comfortable for 7 presets + sections
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 400, maxWidth: 600, minHeight: 600)
+                .frame(minWidth: 400, maxWidth: 600, minHeight: 800)
         }
         .windowResizability(.contentSize)
         .defaultSize(width: Self.windowWidth, height: Self.windowHeight)
@@ -32,7 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let window = NSApplication.shared.windows.first {
             window.title = "SquishPDF"
-            window.setContentSize(NSSize(width: 424, height: 680))
+            window.setContentSize(NSSize(width: 424, height: 856))
             window.center()
             window.makeKeyAndOrderFront(nil)
         }
@@ -61,8 +61,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApplication.shared.orderFrontStandardAboutPanel(options: [
             .applicationName: "SquishPDF",
-            .applicationVersion: "2.7",
-            .version: "2.7.0",
+            .applicationVersion: "2.9",
+            .version: "2.9.0",
             .credits: credits
         ])
     }

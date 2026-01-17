@@ -23,9 +23,9 @@ for arg in "$@"; do
 done
 
 if [ "$BUNDLE_GS" = true ]; then
-    echo "=== Building SquishPDF v2.7 (with Ghostscript) ==="
+    echo "=== Building SquishPDF v2.9 (with Ghostscript) ==="
 else
-    echo "=== Building SquishPDF v2.7 (Lean - without Ghostscript) ==="
+    echo "=== Building SquishPDF v2.9 (Lean - without Ghostscript) ==="
 fi
 
 # Build the Swift package
@@ -70,9 +70,9 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.7</string>
+    <string>2.9</string>
     <key>CFBundleVersion</key>
-    <string>2.7.0</string>
+    <string>2.9.0</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
@@ -80,7 +80,7 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
     <key>CFBundleDisplayName</key>
     <string>SquishPDF</string>
     <key>CFBundleGetInfoString</key>
-    <string>SquishPDF v2.7 - Powered by Ghostscript</string>
+    <string>SquishPDF v2.9 - Powered by Ghostscript</string>
 </dict>
 </plist>
 EOF
