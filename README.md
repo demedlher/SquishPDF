@@ -2,19 +2,18 @@
 
 Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file, select the compression level, convert — done. No sprawling settings. No confusing menus. Just results.
 
-## What's New in v2.7
+## What's New in v2.9
 
-- **Renamed to SquishPDF** - Fresh identity, same great compression
-- **Ghostscript-powered compression** - Industry-standard PDF optimization
-- **Text stays selectable** - No more rasterization; vectors and text preserved
-- **Better compression ratios** - Up to 90% file size reduction
-- **Estimated size preview** - See projected file size before converting
-- **Design tokens** - Bauhaus-inspired UI with 8-point grid and modular typography
+- **Seven compression presets** - Including new Tiny, Grayscale, and Web options
+- **Extreme compression** - Tiny preset achieves up to 98% file size reduction
+- **Graphics-heavy PDF support** - Grayscale preset for documents where color isn't needed
+- **Web optimization** - Stripped metadata, subset fonts, fast web view
+- **Bundled Ghostscript** - Full installer works out of the box, no Homebrew required
 - **Light & Dark mode** - Native macOS appearance support
 
 | Light Mode | Dark Mode |
 |:----------:|:---------:|
-| ![Light Mode](screenshots/squishPDF-conversion-light-v2.7.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.7.png) |
+| ![Light Mode](screenshots/squishPDF-conversion-light-v2.9.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.9.png) |
 
 ## Features
 
