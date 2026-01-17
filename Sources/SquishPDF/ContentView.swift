@@ -106,8 +106,27 @@ struct ContentView: View {
                     .cornerRadius(Design.Radius.sm)
                 }
 
+                // Standard presets
                 VStack(spacing: Design.Space.xs) {
-                    ForEach(GhostscriptPreset.allCases) { preset in
+                    ForEach(GhostscriptPreset.standardPresets, id: \.self) { preset in
+                        CompressionButton(
+                            preset: preset,
+                            isSelected: viewModel.selectedPreset == preset,
+                            estimatedSize: viewModel.estimatedSizeString(for: preset)
+                        ) {
+                            viewModel.selectedPreset = preset
+                        }
+                    }
+                }
+
+                // Specialized presets section
+                VStack(alignment: .leading, spacing: Design.Space.xs) {
+                    Text("Specialized")
+                        .font(.system(size: Design.Font.caption, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.top, Design.Space.xxs)
+
+                    ForEach(GhostscriptPreset.specializedPresets, id: \.self) { preset in
                         CompressionButton(
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,

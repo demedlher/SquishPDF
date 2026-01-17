@@ -1,58 +1,137 @@
 import Foundation
 
-/// Ghostscript compression presets matching -dPDFSETTINGS parameter
+/// Ghostscript compression presets
 enum GhostscriptPreset: String, CaseIterable, Identifiable {
+    // Standard presets (ordered by compression aggressiveness)
+    case tiny = "tiny"
     case screen = "screen"
     case ebook = "ebook"
     case printer = "printer"
     case prepress = "prepress"
+    // Specialized presets
+    case grayscale = "grayscale"
+    case web = "web"
 
     var id: String { rawValue }
 
+    /// Standard presets for general use
+    static var standardPresets: [GhostscriptPreset] {
+        [.tiny, .screen, .ebook, .printer, .prepress]
+    }
+
+    /// Specialized presets for specific use cases
+    static var specializedPresets: [GhostscriptPreset] {
+        [.grayscale, .web]
+    }
+
     var displayName: String {
         switch self {
+        case .tiny: return "Tiny"
         case .screen: return "Small"
         case .ebook: return "Medium"
         case .printer: return "Large"
         case .prepress: return "X-Large"
+        case .grayscale: return "Grayscale"
+        case .web: return "Web"
         }
     }
 
     var description: String {
         switch self {
+        case .tiny: return "Extreme compression (36 DPI)"
         case .screen: return "Lowest quality, smallest file (72 DPI)"
         case .ebook: return "Good quality for e-readers (150 DPI)"
         case .printer: return "High quality for printing (300 DPI)"
         case .prepress: return "Maximum quality, commercial print"
+        case .grayscale: return "Converts to grayscale (150 DPI)"
+        case .web: return "Web-optimized, stripped metadata"
         }
     }
 
-    var gsParameter: String {
-        "/\(rawValue)"
+    /// Whether this is a specialized preset
+    var isSpecialized: Bool {
+        switch self {
+        case .grayscale, .web: return true
+        default: return false
+        }
     }
 
-    /// DPI value for this preset
+    /// Ghostscript arguments for this preset
+    var gsArguments: [String] {
+        switch self {
+        case .tiny:
+            // Ultra-aggressive: 36 DPI, forced JPEG compression
+            return [
+                "-dPDFSETTINGS=/screen",
+                "-dColorImageResolution=36",
+                "-dGrayImageResolution=36",
+                "-dMonoImageResolution=36",
+                "-dColorImageDownsampleType=/Bicubic",
+                "-dGrayImageDownsampleType=/Bicubic",
+                "-dDetectDuplicateImages=true"
+            ]
+        case .screen:
+            return ["-dPDFSETTINGS=/screen"]
+        case .ebook:
+            return ["-dPDFSETTINGS=/ebook"]
+        case .printer:
+            return ["-dPDFSETTINGS=/printer"]
+        case .prepress:
+            return ["-dPDFSETTINGS=/prepress"]
+        case .grayscale:
+            // Convert to grayscale at 150 DPI - great for graphics-heavy docs
+            return [
+                "-dPDFSETTINGS=/ebook",
+                "-sColorConversionStrategy=Gray",
+                "-dProcessColorModel=/DeviceGray",
+                "-dDetectDuplicateImages=true",
+                "-dRemoveUnusedResources=true"
+            ]
+        case .web:
+            // Web-optimized: 72 DPI, stripped metadata, subset fonts
+            return [
+                "-dPDFSETTINGS=/screen",
+                "-dDetectDuplicateImages=true",
+                "-dRemoveUnusedResources=true",
+                "-dSubsetFonts=true",
+                "-dCompressFonts=true",
+                "-dFastWebView=true"
+            ]
+        }
+    }
+
+    /// DPI value for this preset (for display purposes)
     var dpi: Int {
         switch self {
+        case .tiny: return 36
         case .screen: return 72
         case .ebook: return 150
         case .printer: return 300
         case .prepress: return 300
+        case .grayscale: return 150
+        case .web: return 72
         }
     }
 
     /// Filename suffix (e.g., "medium-150dpi")
     var filenameSuffix: String {
-        "\(displayName.lowercased())-\(dpi)dpi"
+        switch self {
+        case .grayscale: return "grayscale-\(dpi)dpi"
+        case .web: return "web-optimized"
+        default: return "\(displayName.lowercased())-\(dpi)dpi"
+        }
     }
 
     /// Estimated compression ratio range (min, max) as percentage of original size
     var estimatedRatioRange: (min: Double, max: Double) {
         switch self {
+        case .tiny: return (0.02, 0.10)     // 2-10% of original (90-98% reduction)
         case .screen: return (0.05, 0.20)   // 5-20% of original (80-95% reduction)
         case .ebook: return (0.20, 0.40)    // 20-40% of original (60-80% reduction)
         case .printer: return (0.40, 0.70)  // 40-70% of original (30-60% reduction)
         case .prepress: return (0.70, 0.95) // 70-95% of original (5-30% reduction)
+        case .grayscale: return (0.10, 0.30) // 10-30% of original (70-90% reduction)
+        case .web: return (0.05, 0.20)      // 5-20% of original (80-95% reduction)
         }
     }
 
@@ -165,16 +244,19 @@ class GhostscriptService {
         process.executableURL = gsExecutable
 
         // Build Ghostscript arguments
-        process.arguments = [
+        var arguments = [
             "-dNOPAUSE",
             "-dBATCH",
             "-dSAFER",
             "-sDEVICE=pdfwrite",
-            "-dCompatibilityLevel=1.4",
-            "-dPDFSETTINGS=\(preset.gsParameter)",
-            "-sOutputFile=\(outputURL.path)",
-            inputURL.path
+            "-dCompatibilityLevel=1.4"
         ]
+        // Add preset-specific arguments
+        arguments.append(contentsOf: preset.gsArguments)
+        // Add output and input files
+        arguments.append("-sOutputFile=\(outputURL.path)")
+        arguments.append(inputURL.path)
+        process.arguments = arguments
 
         // Set environment for bundled resources if available
         if let resourcePath = gsResourcePath {
