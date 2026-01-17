@@ -31,6 +31,16 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
 - Estimated output size shown for each preset
 - Automatic file naming with preset suffix (e.g., `document-medium-150dpi.pdf`)
 
+## Who is this app for?
+
+- **Office professionals** (marketing, sales, HR, finance) tired of emailing 50 MB PDFs
+- **Anyone frustrated** with Preview's "Reduce File Size" producing barely-smaller files
+- **Users who've tried** Adobe Acrobat, Office export options, or online compressors — and found them lacking
+- **People who need** to meet upload size limits for portals, forms, or email attachments
+- **Mac users who want** a native, offline solution that just works — no subscriptions, no uploads to sketchy websites
+
+If you've ever wondered why your 80-page presentation is still 45 MB after "compressing" it, SquishPDF is for you.
+
 ## Requirements
 
 ### macOS
