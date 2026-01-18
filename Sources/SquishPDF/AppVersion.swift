@@ -7,10 +7,10 @@ struct AppVersion {
     static let version = "3.1"
 
     /// Build number (patch version, incremented with each installer build)
-    static let build = 14
+    static let build = 16
 
     /// Git commit hash (short)
-    static let commit = "fbd3b0b"
+    static let commit = "bd17762"
 
     /// Full version string for display
     static var fullVersion: String {
