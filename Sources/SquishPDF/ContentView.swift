@@ -2,10 +2,74 @@ import SwiftUI
 import UniformTypeIdentifiers
 import AppKit
 
+/// 3-segment compression potential indicator
+struct CompressionIndicator: View {
+    let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
+
+    private let segmentWidth: CGFloat = 12
+    private let segmentHeight: CGFloat = 6
+    private let segmentSpacing: CGFloat = 2
+
+    var body: some View {
+        HStack(spacing: segmentSpacing) {
+            // Segment 1 (left) - always shows state
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(segment1Color)
+                .frame(width: segmentWidth, height: segmentHeight)
+
+            // Segment 2 (middle)
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(segment2Color)
+                .frame(width: segmentWidth, height: segmentHeight)
+
+            // Segment 3 (right)
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(segment3Color)
+                .frame(width: segmentWidth, height: segmentHeight)
+        }
+        .help(helpText)
+    }
+
+    private var segment1Color: Color {
+        guard let eff = effectiveness else { return Color.secondary.opacity(0.3) }
+        switch eff {
+        case .unlikely: return Color.red.opacity(0.7)
+        case .marginal: return Color.orange.opacity(0.7)
+        case .definite: return Color.green.opacity(0.7)
+        }
+    }
+
+    private var segment2Color: Color {
+        guard let eff = effectiveness else { return Color.secondary.opacity(0.3) }
+        switch eff {
+        case .unlikely: return Color.secondary.opacity(0.3)
+        case .marginal: return Color.orange.opacity(0.7)
+        case .definite: return Color.green.opacity(0.7)
+        }
+    }
+
+    private var segment3Color: Color {
+        guard let eff = effectiveness else { return Color.secondary.opacity(0.3) }
+        switch eff {
+        case .unlikely: return Color.secondary.opacity(0.3)
+        case .marginal: return Color.secondary.opacity(0.3)
+        case .definite: return Color.green.opacity(0.7)
+        }
+    }
+
+    private var helpText: String {
+        guard let eff = effectiveness else { return "Drop a PDF to see compression potential" }
+        switch eff {
+        case .unlikely: return "Unlikely to reduce file size"
+        case .marginal: return "May provide some compression"
+        case .definite: return "Good compression expected"
+        }
+    }
+}
+
 struct CompressionButton: View {
     let preset: GhostscriptPreset
     let isSelected: Bool
-    let estimatedSize: String
     let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
     let action: () -> Void
 
@@ -25,48 +89,20 @@ struct CompressionButton: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: Design.Space.xxs) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 4) {
-                                Text(preset.displayName)
-                                    .font(.system(size: Design.Font.body, weight: .medium))
-                                    .foregroundColor(.primary)
-                                // Show indicator based on effectiveness
-                                if let eff = effectiveness {
-                                    switch eff {
-                                    case .definite:
-                                        Circle()
-                                            .fill(Color.green)
-                                            .frame(width: 8, height: 8)
-                                            .help("Significant file size reduction expected")
-                                    case .marginal:
-                                        EmptyView()  // No indicator for marginal
-                                    case .unlikely:
-                                        Image(systemName: "exclamationmark.triangle.fill")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(.orange)
-                                            .help("Source DPI is already lower than this preset")
-                                    }
-                                }
-                            }
-                            Text(preset.description)
-                                .font(.system(size: Design.Font.caption))
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        if !estimatedSize.isEmpty {
-                            VStack(alignment: .trailing, spacing: 1) {
-                                Text("est. new size:")
-                                    .font(.system(size: Design.Font.caption))
-                                    .foregroundColor(.secondary)
-                                Text(estimatedSize)
-                                    .font(.system(size: Design.Font.label))
-                                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                            }
-                        }
-                    }
+                // Preset info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(preset.displayName)
+                        .font(.system(size: Design.Font.body, weight: .medium))
+                        .foregroundColor(.primary)
+                    Text(preset.description)
+                        .font(.system(size: Design.Font.caption))
+                        .foregroundColor(.secondary)
                 }
+
+                Spacer()
+
+                // Compression potential indicator
+                CompressionIndicator(effectiveness: effectiveness)
             }
             .padding(.vertical, Design.Space.xs)
             .padding(.horizontal, Design.Space.sm)
@@ -132,7 +168,6 @@ struct ContentView: View {
                         CompressionButton(
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,
-                            estimatedSize: viewModel.estimatedSizeString(for: preset),
                             effectiveness: viewModel.presetEffectiveness(preset)
                         ) {
                             viewModel.selectedPreset = preset
@@ -151,7 +186,6 @@ struct ContentView: View {
                         CompressionButton(
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,
-                            estimatedSize: viewModel.estimatedSizeString(for: preset),
                             effectiveness: viewModel.presetEffectiveness(preset)
                         ) {
                             viewModel.selectedPreset = preset
@@ -173,12 +207,6 @@ struct ContentView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity)
 
-            // Estimate disclaimer
-            Text("Size estimates are approximate as exact resulting size greatly depends on content.")
-                .font(.system(size: Design.Font.caption - 1))
-                .foregroundColor(.secondary.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .padding(.bottom, Design.Space.xs)
 
             // Convert button at bottom
             Button(action: { viewModel.convert() }) {
