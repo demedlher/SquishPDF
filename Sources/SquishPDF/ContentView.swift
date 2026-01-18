@@ -382,15 +382,23 @@ struct ContentView: View {
     @ViewBuilder
     private var statusMessages: some View {
         if let success = viewModel.conversionSuccess {
-            HStack(spacing: Design.Space.xs) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                Text(success)
-                    .font(.system(size: Design.Font.label))
+            Button(action: { viewModel.revealOutputInFinder() }) {
+                HStack(spacing: Design.Space.xs) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                    Text(success)
+                        .font(.system(size: Design.Font.label))
+                        .underline()
+                    Image(systemName: "arrow.right.circle")
+                        .font(.system(size: Design.Font.label))
+                        .foregroundColor(.green.opacity(0.7))
+                }
+                .foregroundColor(.green)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
             }
-            .foregroundColor(.green)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
+            .help("Click to reveal in Finder")
         }
 
         if let error = viewModel.lastError {

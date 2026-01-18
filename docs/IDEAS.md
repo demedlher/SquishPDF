@@ -1,8 +1,6 @@
 # Ideas & Feature Requests
 
 ## Under Consideration
-
-- [ ] **Clickable output path** - Make the "Saved: filename.pdf" confirmation a hyperlink that opens/reveals the converted file in Finder
 - [ ] **Commercial fork** - Fork the project to use non-AGPL PDF libraries (e.g., PDFKit, Quartz) to enable distribution on Gumroad or Apple App Store
 - [ ] **Evaluate alternative PDF libraries** - Compare Ghostscript with native macOS frameworks (PDFKit, Quartz) or other libraries for compression quality and speed (use benchmark.sh to track)
 - [ ] **Batch processing** - Allow dropping multiple PDFs and processing them all with the selected preset
@@ -16,4 +14,4 @@
 
 ## Completed
 
-_(Move completed items here for history)_
+- [x] **Clickable output path** - Success message is now clickable to reveal the converted file in Finder (v2.10)

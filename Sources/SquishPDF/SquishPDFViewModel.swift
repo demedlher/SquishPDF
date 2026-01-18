@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 class SquishPDFViewModel: ObservableObject {
     @Published var selectedPreset: GhostscriptPreset = .ebook
@@ -7,6 +8,7 @@ class SquishPDFViewModel: ObservableObject {
     @Published var lastError: String?
     @Published var progress: GhostscriptProgress?
     @Published var conversionSuccess: String?
+    @Published var lastOutputURL: URL?
 
     // File info
     @Published var droppedFileURL: URL?
@@ -165,6 +167,13 @@ class SquishPDFViewModel: ObservableObject {
         pdfAnalysis = nil
         lastError = nil
         conversionSuccess = nil
+        lastOutputURL = nil
+    }
+
+    /// Reveal the last output file in Finder
+    func revealOutputInFinder() {
+        guard let url = lastOutputURL else { return }
+        NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
     }
 
     /// Start conversion (called when user clicks Convert button)
@@ -183,6 +192,7 @@ class SquishPDFViewModel: ObservableObject {
         lastError = nil
         progress = nil
         conversionSuccess = nil
+        lastOutputURL = nil
 
         // Get analysis data for conversion
         let sourceDPI = pdfAnalysis?.avgDPI
@@ -216,6 +226,7 @@ class SquishPDFViewModel: ObservableObject {
                 await MainActor.run {
                     self.isConverting = false
                     self.progress = nil
+                    self.lastOutputURL = outputURL
                     self.conversionSuccess = "Saved: \(newFilename)\n\(compressedSizeStr) (\(reduction)% smaller)"
                 }
             } catch {
