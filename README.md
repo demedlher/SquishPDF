@@ -2,14 +2,13 @@
 
 Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file, select the compression level, convert — done. No sprawling settings. No confusing menus. Just results.
 
-## What's New in v2.9
+## What's New in v2.10
 
-- **Seven compression presets** - Including new Tiny, Grayscale, and Web options
-- **Extreme compression** - Tiny preset achieves up to 98% file size reduction
-- **Graphics-heavy PDF support** - Grayscale preset for documents where color isn't needed
-- **Web optimization** - Stripped metadata, subset fonts, fast web view
-- **Bundled Ghostscript** - Full installer works out of the box, no Homebrew required
-- **Light & Dark mode** - Native macOS appearance support
+- **Smart size estimates** - Multi-parameter analysis shows realistic estimate ranges based on PDF content
+- **PDF analysis** - Detects image DPI, compression type, and content ratio on file drop
+- **Effectiveness indicators** - Green dot for definite compression, warning for unlikely benefit
+- **Conversion progress** - Shows "Page X of Y (Z%)" during conversion
+- **Improved Grayscale** - Now uses source DPI to maintain quality while converting to grayscale
 
 | Light Mode | Dark Mode |
 |:----------:|:---------:|
@@ -24,10 +23,12 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
   - **Medium** (150 DPI) - Good quality for e-readers
   - **Large** (300 DPI) - High quality for printing
   - **X-Large** - Maximum quality for commercial print
-  - **Grayscale** (150 DPI) - Converts to grayscale, great for graphics-heavy docs
+  - **Grayscale** (source DPI) - Converts to grayscale while maintaining quality
   - **Web** (72 DPI) - Web-optimized with stripped metadata and subset fonts
+- **Smart PDF analysis** - Detects image DPI and shows estimated quality on drop
+- **Effectiveness indicators** - See which presets will actually help compress your specific PDF
+- **Estimated size ranges** - Realistic estimates based on content analysis
 - Text remains searchable and selectable after compression
-- Estimated output size shown for each preset
 - Automatic file naming with preset suffix (e.g., `document-medium-150dpi.pdf`)
 
 ## Who is this app for?
@@ -93,7 +94,7 @@ cd SquishPDF
 | Medium | 60-80% | E-readers, tablets |
 | Large | 30-60% | Office printing |
 | X-Large | 5-30% | Professional printing |
-| Grayscale | 70-90% | Graphics-heavy docs where color isn't needed |
+| Grayscale | 30-50% | Graphics-heavy docs where color isn't needed (maintains quality) |
 | Web | 80-95% | Web publishing, fast loading |
 
 ## Project Structure
@@ -116,7 +117,7 @@ SquishPDF/
 
 ## Tech Stack
 
-### macOS (v2.7)
+### macOS (v2.10)
 - **Language**: Swift 5.9+
 - **Framework**: SwiftUI
 - **PDF Processing**: Ghostscript (bundled)
