@@ -45,13 +45,26 @@ class SquishPDFViewModel: ObservableObject {
     func estimatedSizeString(for preset: GhostscriptPreset) -> String {
         guard originalFileSize > 0 else { return "" }
 
-        // If we have PDF analysis, use it for smarter estimates
-        if let analysis = pdfAnalysis, analysis.imageCount > 0 {
-            let ratio = analysis.estimatedRatio(forTargetDPI: preset.dpi)
-            let estimatedSize = Int64(Double(originalFileSize) * ratio)
+        // If we have PDF analysis, use multi-parameter range estimate
+        if let analysis = pdfAnalysis {
+            let stripsMetadata = (preset == .web)  // Web preset strips metadata
+            let range = analysis.estimatedRatioRange(forTargetDPI: preset.dpi, stripsMetadata: stripsMetadata)
 
-            // Show single value for DPI-based estimate (more accurate)
-            return Self.formatFileSize(estimatedSize)
+            let minSize = Int64(Double(originalFileSize) * range.low)
+            let maxSize = Int64(Double(originalFileSize) * range.high)
+
+            let minStr = Self.formatFileSize(minSize)
+            let maxStr = Self.formatFileSize(maxSize)
+
+            // If high estimate exceeds original, show "?" to indicate uncertainty
+            if range.high >= 1.0 {
+                return "\(minStr) - ?"
+            }
+
+            if minStr == maxStr {
+                return "~\(minStr)"
+            }
+            return "\(minStr) - \(maxStr)"
         }
 
         // Fall back to generic range-based estimate
@@ -64,12 +77,37 @@ class SquishPDFViewModel: ObservableObject {
         return "\(minStr) - \(maxStr)"
     }
 
-    /// Check if a preset will be effective based on PDF analysis
-    func isPresetEffective(_ preset: GhostscriptPreset) -> Bool {
+    /// Compression effectiveness levels
+    enum CompressionEffectiveness {
+        case definite   // Green - significant compression expected
+        case marginal   // Nothing - some improvement possible
+        case unlikely   // Warning - little to no compression expected
+    }
+
+    /// Check how effective a preset will be based on PDF analysis
+    func presetEffectiveness(_ preset: GhostscriptPreset) -> CompressionEffectiveness? {
         guard let analysis = pdfAnalysis, analysis.imageCount > 0 else {
-            return true  // Assume effective if no analysis available
+            return nil  // No analysis available
         }
-        return analysis.isPresetEffective(preset)
+
+        // Grayscale uses source DPI, so effectiveness depends on color conversion
+        if preset == .grayscale {
+            return .marginal  // Grayscale conversion benefit is uncertain
+        }
+
+        let targetDPI = preset.dpi
+        let sourceDPI = analysis.avgDPI
+
+        // Calculate ratio of target to source
+        let ratio = Double(targetDPI) / Double(sourceDPI)
+
+        if ratio < 0.6 {
+            return .definite   // Target is <60% of source - significant compression
+        } else if ratio < 1.2 {
+            return .marginal   // Target is 60-120% of source - some improvement possible
+        } else {
+            return .unlikely   // Target >120% of source - unlikely to help
+        }
     }
 
     func handleDroppedFiles(_ providers: [NSItemProvider]) {
@@ -146,9 +184,13 @@ class SquishPDFViewModel: ObservableObject {
         progress = nil
         conversionSuccess = nil
 
+        // Get source DPI for grayscale preset (maintains quality)
+        let sourceDPI = pdfAnalysis?.avgDPI
+
         // Generate output filename with preset suffix (e.g., doc-medium-150dpi.pdf)
         let originalFilename = url.deletingPathExtension().lastPathComponent
-        let newFilename = "\(originalFilename)-\(selectedPreset.filenameSuffix).pdf"
+        let suffix = selectedPreset.filenameSuffix(withDPI: sourceDPI)
+        let newFilename = "\(originalFilename)-\(suffix).pdf"
         let outputURL = url.deletingLastPathComponent().appendingPathComponent(newFilename)
 
         Task {
@@ -156,7 +198,8 @@ class SquishPDFViewModel: ObservableObject {
                 try await ghostscriptService.compressPDF(
                     inputURL: url,
                     outputURL: outputURL,
-                    preset: selectedPreset
+                    preset: selectedPreset,
+                    sourceDPI: sourceDPI
                 ) { [weak self] progress in
                     self?.progress = progress
                 }

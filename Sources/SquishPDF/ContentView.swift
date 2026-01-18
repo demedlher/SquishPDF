@@ -6,7 +6,7 @@ struct CompressionButton: View {
     let preset: GhostscriptPreset
     let isSelected: Bool
     let estimatedSize: String
-    let isEffective: Bool
+    let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
     let action: () -> Void
 
     var body: some View {
@@ -32,11 +32,22 @@ struct CompressionButton: View {
                                 Text(preset.displayName)
                                     .font(.system(size: Design.Font.body, weight: .medium))
                                     .foregroundColor(.primary)
-                                if !isEffective {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.orange)
-                                        .help("Source DPI is already lower than this preset")
+                                // Show indicator based on effectiveness
+                                if let eff = effectiveness {
+                                    switch eff {
+                                    case .definite:
+                                        Circle()
+                                            .fill(Color.green)
+                                            .frame(width: 8, height: 8)
+                                            .help("Significant file size reduction expected")
+                                    case .marginal:
+                                        EmptyView()  // No indicator for marginal
+                                    case .unlikely:
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.orange)
+                                            .help("Source DPI is already lower than this preset")
+                                    }
                                 }
                             }
                             Text(preset.description)
@@ -122,7 +133,7 @@ struct ContentView: View {
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,
                             estimatedSize: viewModel.estimatedSizeString(for: preset),
-                            isEffective: viewModel.isPresetEffective(preset)
+                            effectiveness: viewModel.presetEffectiveness(preset)
                         ) {
                             viewModel.selectedPreset = preset
                         }
@@ -141,7 +152,7 @@ struct ContentView: View {
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,
                             estimatedSize: viewModel.estimatedSizeString(for: preset),
-                            isEffective: viewModel.isPresetEffective(preset)
+                            effectiveness: viewModel.presetEffectiveness(preset)
                         ) {
                             viewModel.selectedPreset = preset
                         }
@@ -161,6 +172,12 @@ struct ContentView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity)
+
+            // Estimate disclaimer
+            Text("Size estimates are approximate as exact resulting size greatly depends on content.")
+                .font(.system(size: Design.Font.caption - 1))
+                .foregroundColor(.secondary.opacity(0.7))
+                .multilineTextAlignment(.center)
                 .padding(.bottom, Design.Space.xs)
 
             // Convert button at bottom

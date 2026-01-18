@@ -44,8 +44,8 @@ enum GhostscriptPreset: String, CaseIterable, Identifiable {
         case .ebook: return "Good quality for e-readers (150 DPI)"
         case .printer: return "High quality for printing (300 DPI)"
         case .prepress: return "Maximum quality, commercial print"
-        case .grayscale: return "Converts to grayscale (150 DPI)"
-        case .web: return "Web-optimized, stripped metadata"
+        case .grayscale: return "Converts to grayscale, same quality"
+        case .web: return "Web-optimized, stripped metadata (72 DPI)"
         }
     }
 
@@ -80,9 +80,8 @@ enum GhostscriptPreset: String, CaseIterable, Identifiable {
         case .prepress:
             return ["-dPDFSETTINGS=/prepress"]
         case .grayscale:
-            // Convert to grayscale at 150 DPI - great for graphics-heavy docs
+            // Convert to grayscale - DPI set dynamically via gsArguments(withDPI:)
             return [
-                "-dPDFSETTINGS=/ebook",
                 "-sColorConversionStrategy=Gray",
                 "-dProcessColorModel=/DeviceGray",
                 "-dDetectDuplicateImages=true",
@@ -101,6 +100,22 @@ enum GhostscriptPreset: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Get Ghostscript arguments with custom DPI (for grayscale which uses source DPI)
+    func gsArguments(withDPI customDPI: Int?) -> [String] {
+        if self == .grayscale, let dpi = customDPI {
+            return [
+                "-sColorConversionStrategy=Gray",
+                "-dProcessColorModel=/DeviceGray",
+                "-dColorImageResolution=\(dpi)",
+                "-dGrayImageResolution=\(dpi)",
+                "-dMonoImageResolution=\(dpi)",
+                "-dDetectDuplicateImages=true",
+                "-dRemoveUnusedResources=true"
+            ]
+        }
+        return gsArguments
+    }
+
     /// DPI value for this preset (for display purposes)
     var dpi: Int {
         switch self {
@@ -117,10 +132,18 @@ enum GhostscriptPreset: String, CaseIterable, Identifiable {
     /// Filename suffix (e.g., "medium-150dpi")
     var filenameSuffix: String {
         switch self {
-        case .grayscale: return "grayscale-\(dpi)dpi"
-        case .web: return "web-optimized"
+        case .grayscale: return "grayscale"  // DPI will be appended dynamically
+        case .web: return "web-\(dpi)dpi"
         default: return "\(displayName.lowercased())-\(dpi)dpi"
         }
+    }
+
+    /// Get filename suffix with custom DPI (for grayscale which uses source DPI)
+    func filenameSuffix(withDPI customDPI: Int?) -> String {
+        if self == .grayscale, let dpi = customDPI {
+            return "grayscale-\(dpi)dpi"
+        }
+        return filenameSuffix
     }
 
     /// Estimated compression ratio range (min, max) as percentage of original size
@@ -160,33 +183,62 @@ struct GhostscriptProgress {
 
 /// Results from analyzing a PDF's image content
 struct PDFImageAnalysis {
+    // Basic image info
     let imageCount: Int
-    let minDPI: Int
-    let maxDPI: Int
     let avgDPI: Int
     let pageWidthInches: Double
     let pageHeightInches: Double
 
-    /// Estimate compression ratio for a given target DPI
-    /// Returns a value between 0 and 1 (percentage of original size)
-    func estimatedRatio(forTargetDPI targetDPI: Int) -> Double {
-        guard avgDPI > 0 else { return 0.5 }  // Default if no images found
+    // Multi-parameter analysis
+    let estimatedImageRatio: Double      // 0-1: portion of file that's image data
+    let jpegCompressedRatio: Double      // 0-1: portion of images already JPEG compressed
+    let hasCMYK: Bool                    // CMYK images present (4 channels)
+    let hasMetadata: Bool                // XMP/metadata streams present
+    let fontCount: Int                   // Number of embedded fonts
 
-        if targetDPI >= avgDPI {
-            // Target DPI is same or higher than source - minimal compression
-            return 0.85
+    /// Estimate compression ratio range for a given target DPI
+    /// Returns (low, high) as percentages of original size
+    func estimatedRatioRange(forTargetDPI targetDPI: Int, stripsMetadata: Bool = false) -> (low: Double, high: Double) {
+        // Base case: no images or can't determine
+        guard avgDPI > 0, imageCount > 0 else {
+            return (0.4, 0.9)  // Wide range for unknown content
         }
 
-        // Compression is roughly proportional to (targetDPI / sourceDPI)^2
-        // because we're reducing both dimensions
-        let ratio = Double(targetDPI) / Double(avgDPI)
-        let compressionFactor = ratio * ratio
+        // 1. DPI-based compression factor
+        let dpiRatio = Double(targetDPI) / Double(avgDPI)
+        var baseCompression: Double
 
-        // Add some overhead for PDF structure, fonts, etc. (typically 10-20% of file)
-        let estimatedRatio = compressionFactor * 0.85 + 0.10
+        if dpiRatio >= 1.0 {
+            // Target DPI >= source: might increase size due to re-encoding
+            baseCompression = 1.0
+        } else {
+            // DPI reduction: compression is roughly proportional to area reduction
+            baseCompression = dpiRatio * dpiRatio
+        }
 
-        // Clamp to reasonable range
-        return min(0.95, max(0.02, estimatedRatio))
+        // 2. Adjust for existing JPEG compression
+        // Already-compressed images have less room for improvement
+        // Re-encoding JPEG can sometimes increase size
+        let compressionPenalty = 1.0 + (jpegCompressedRatio * 0.3)  // Up to 30% penalty
+        baseCompression *= compressionPenalty
+
+        // 3. Weight by image ratio (text/vectors don't compress with DPI)
+        let nonImageRatio = 1.0 - estimatedImageRatio
+        let weightedCompression = (estimatedImageRatio * baseCompression) + (nonImageRatio * 0.95)
+
+        // 4. Metadata savings (if stripping)
+        let metadataSavings = (stripsMetadata && hasMetadata) ? 0.02 : 0.0
+
+        // 5. Calculate range with uncertainty
+        // More JPEG = more uncertainty (re-encoding is unpredictable)
+        // Less image content = more uncertainty
+        let uncertainty = 0.25 + (jpegCompressedRatio * 0.15) + ((1.0 - estimatedImageRatio) * 0.1)
+
+        let midEstimate = weightedCompression - metadataSavings
+        let low = max(0.05, midEstimate * (1.0 - uncertainty))
+        let high = min(1.5, midEstimate * (1.0 + uncertainty))  // Can exceed 1.0 (file gets bigger)
+
+        return (low, high)
     }
 
     /// Check if a preset will provide meaningful compression
@@ -274,6 +326,7 @@ class GhostscriptService {
     /// Analyze a PDF to determine image DPI and estimate compression potential
     func analyzePDF(at url: URL) -> PDFImageAnalysis? {
         guard let data = try? Data(contentsOf: url) else { return nil }
+        let fileSize = Double(data.count)
 
         // Convert to string for pattern matching (using latin1 to handle binary)
         guard let content = String(data: data, encoding: .isoLatin1) else { return nil }
@@ -288,7 +341,6 @@ class GhostscriptService {
                 .compactMap { Double($0) }
                 .filter { $0 > 0 }
             if numbers.count >= 2 {
-                // Last two numbers are typically width and height
                 let width = numbers[numbers.count - 2]
                 let height = numbers[numbers.count - 1]
                 pageWidthInches = width / 72.0
@@ -296,10 +348,21 @@ class GhostscriptService {
             }
         }
 
-        // Find images by looking for /Subtype /Image patterns with Width/Height
+        // Track multi-parameter analysis
         var imageDPIs: [Int] = []
+        var totalImagePixels: Int = 0
+        var jpegImageCount = 0
+        var hasCMYK = false
+        var totalImageCount = 0
 
-        // Pattern to find image objects with dimensions
+        // Check for metadata
+        let hasMetadata = content.contains("/Metadata") || content.contains("/XMP")
+
+        // Count fonts
+        let fontMatches = content.components(separatedBy: "/Type /Font").count - 1
+        let fontCount = max(0, fontMatches)
+
+        // Pattern to find objects
         let objPattern = #"(\d+)\s+0\s+obj.*?endobj"#
         let regex = try? NSRegularExpression(pattern: objPattern, options: .dotMatchesLineSeparators)
         let nsContent = content as NSString
@@ -310,6 +373,18 @@ class GhostscriptService {
 
             // Check if this is an image object
             if objStr.contains("/Subtype") && objStr.contains("/Image") {
+                totalImageCount += 1
+
+                // Check compression type
+                if objStr.contains("/DCTDecode") || objStr.contains("/JPXDecode") {
+                    jpegImageCount += 1  // JPEG or JPEG2000 compressed
+                }
+
+                // Check color space
+                if objStr.contains("/DeviceCMYK") || objStr.contains("/ICCBased") && objStr.contains("4") {
+                    hasCMYK = true
+                }
+
                 // Extract width and height
                 var width: Int?
                 var height: Int?
@@ -326,14 +401,14 @@ class GhostscriptService {
                     height = heightStr
                 }
 
-                // Calculate DPI if we have dimensions (filter out tiny images)
+                // Calculate DPI if we have dimensions (filter out tiny images like icons)
                 if let w = width, let h = height, w > 50, h > 50 {
-                    // Estimate DPI assuming image could span the page
+                    totalImagePixels += w * h
+
                     let dpiFromWidth = Double(w) / pageWidthInches
                     let dpiFromHeight = Double(h) / pageHeightInches
                     let estimatedDPI = Int(max(dpiFromWidth, dpiFromHeight))
 
-                    // Filter reasonable DPI values (10 to 1200)
                     if estimatedDPI >= 10 && estimatedDPI <= 1200 {
                         imageDPIs.append(estimatedDPI)
                     }
@@ -341,30 +416,29 @@ class GhostscriptService {
             }
         }
 
-        // Calculate statistics
-        guard !imageDPIs.isEmpty else {
-            // No images found - return default analysis
-            return PDFImageAnalysis(
-                imageCount: 0,
-                minDPI: 0,
-                maxDPI: 0,
-                avgDPI: 0,
-                pageWidthInches: pageWidthInches,
-                pageHeightInches: pageHeightInches
-            )
-        }
+        // Calculate image ratio estimate
+        // Rough estimate: 3 bytes per pixel for RGB, compressed ~10:1 for JPEG, ~2:1 for other
+        let avgCompressionRatio = totalImageCount > 0 ? (Double(jpegImageCount) / Double(totalImageCount) * 10.0 + Double(totalImageCount - jpegImageCount) / Double(totalImageCount) * 2.0) : 5.0
+        let estimatedUncompressedImageSize = Double(totalImagePixels) * 3.0
+        let estimatedCompressedImageSize = estimatedUncompressedImageSize / avgCompressionRatio
+        let estimatedImageRatio = min(0.95, estimatedCompressedImageSize / fileSize)
 
-        let minDPI = imageDPIs.min() ?? 0
-        let maxDPI = imageDPIs.max() ?? 0
-        let avgDPI = imageDPIs.reduce(0, +) / imageDPIs.count
+        // JPEG compression ratio
+        let jpegCompressedRatio = totalImageCount > 0 ? Double(jpegImageCount) / Double(totalImageCount) : 0.0
+
+        // Calculate DPI statistics
+        let avgDPI = imageDPIs.isEmpty ? 0 : imageDPIs.reduce(0, +) / imageDPIs.count
 
         return PDFImageAnalysis(
-            imageCount: imageDPIs.count,
-            minDPI: minDPI,
-            maxDPI: maxDPI,
+            imageCount: totalImageCount,
             avgDPI: avgDPI,
             pageWidthInches: pageWidthInches,
-            pageHeightInches: pageHeightInches
+            pageHeightInches: pageHeightInches,
+            estimatedImageRatio: estimatedImageRatio,
+            jpegCompressedRatio: jpegCompressedRatio,
+            hasCMYK: hasCMYK,
+            hasMetadata: hasMetadata,
+            fontCount: fontCount
         )
     }
 
@@ -379,6 +453,7 @@ class GhostscriptService {
         inputURL: URL,
         outputURL: URL,
         preset: GhostscriptPreset,
+        sourceDPI: Int? = nil,  // Used for grayscale to maintain quality
         progressHandler: @escaping (GhostscriptProgress) -> Void
     ) async throws {
         guard let gsExecutable = gsPath else {
@@ -403,8 +478,8 @@ class GhostscriptService {
             "-sDEVICE=pdfwrite",
             "-dCompatibilityLevel=1.4"
         ]
-        // Add preset-specific arguments
-        arguments.append(contentsOf: preset.gsArguments)
+        // Add preset-specific arguments (with custom DPI for grayscale)
+        arguments.append(contentsOf: preset.gsArguments(withDPI: sourceDPI))
         // Add output and input files
         arguments.append("-sOutputFile=\(outputURL.path)")
         arguments.append(inputURL.path)
