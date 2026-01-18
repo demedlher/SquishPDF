@@ -22,10 +22,22 @@ for arg in "$@"; do
     esac
 done
 
-if [ "$BUNDLE_GS" = true ]; then
-    echo "=== Building SquishPDF v2.9 (with Ghostscript) ==="
-else
-    echo "=== Building SquishPDF v2.9 (Lean - without Ghostscript) ==="
+# Get current version info
+VERSION_FILE="Sources/SquishPDF/AppVersion.swift"
+CURRENT_VERSION=$(grep 'static let version' "$VERSION_FILE" | sed 's/.*"\(.*\)".*/\1/')
+CURRENT_BUILD=$(grep 'static let build' "$VERSION_FILE" | sed 's/[^0-9]*\([0-9]*\).*/\1/')
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# Increment build number
+NEW_BUILD=$((CURRENT_BUILD + 1))
+
+# Update AppVersion.swift
+sed -i '' "s/static let build = [0-9]*/static let build = $NEW_BUILD/" "$VERSION_FILE"
+sed -i '' "s/static let commit = \"[^\"]*\"/static let commit = \"$GIT_COMMIT\"/" "$VERSION_FILE"
+
+echo "=== Building SquishPDF v${CURRENT_VERSION}.${NEW_BUILD} (${GIT_COMMIT}) ==="
+if [ "$BUNDLE_GS" = false ]; then
+    echo "    (Lean - without Ghostscript)"
 fi
 
 # Build the Swift package

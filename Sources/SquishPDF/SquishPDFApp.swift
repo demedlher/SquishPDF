@@ -61,8 +61,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApplication.shared.orderFrontStandardAboutPanel(options: [
             .applicationName: "SquishPDF",
-            .applicationVersion: "2.10",
-            .version: "2.10.0",
+            .applicationVersion: AppVersion.version,
+            .version: AppVersion.versionWithBuild,
             .credits: credits
         ])
     }
