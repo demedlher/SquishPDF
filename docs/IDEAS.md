@@ -3,7 +3,6 @@
 ## Under Consideration
 - [ ] **Commercial fork** - Fork the project to use non-AGPL PDF libraries (e.g., PDFKit, Quartz) to enable distribution on Gumroad or Apple App Store
 - [ ] **Evaluate alternative PDF libraries** - Compare Ghostscript with native macOS frameworks (PDFKit, Quartz) or other libraries for compression quality and speed (use benchmark.sh to track)
-- [ ] **Batch processing** - Allow dropping multiple PDFs and/or selecting multiple presets to process in one go
 
 ## Maybe Later
 
@@ -14,4 +13,5 @@
 
 ## Completed
 
+- [x] **Batch processing** - Drop multiple PDFs and/or select multiple presets to process in one go (v3.1)
 - [x] **Clickable output path** - Success message is now clickable to reveal the converted file in Finder (v2.10)
