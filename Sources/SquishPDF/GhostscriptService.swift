@@ -186,6 +186,7 @@ struct PDFImageAnalysis {
     // Basic image info
     let imageCount: Int
     let avgDPI: Int
+    let pageCount: Int                   // Total pages in PDF
     let pageWidthInches: Double
     let pageHeightInches: Double
 
@@ -328,6 +329,9 @@ class GhostscriptService {
         guard let data = try? Data(contentsOf: url) else { return nil }
         let fileSize = Double(data.count)
 
+        // Get page count using PDFKit (runs in background, so OK here)
+        let pageCount = getPageCount(for: url)
+
         // Convert to string for pattern matching (using latin1 to handle binary)
         guard let content = String(data: data, encoding: .isoLatin1) else { return nil }
 
@@ -432,6 +436,7 @@ class GhostscriptService {
         return PDFImageAnalysis(
             imageCount: totalImageCount,
             avgDPI: avgDPI,
+            pageCount: pageCount,
             pageWidthInches: pageWidthInches,
             pageHeightInches: pageHeightInches,
             estimatedImageRatio: estimatedImageRatio,
@@ -454,6 +459,7 @@ class GhostscriptService {
         outputURL: URL,
         preset: GhostscriptPreset,
         sourceDPI: Int? = nil,  // Used for grayscale to maintain quality
+        pageCount: Int = 0,     // Pre-computed page count for progress (avoids re-loading PDF)
         progressHandler: @escaping (GhostscriptProgress) -> Void
     ) async throws {
         guard let gsExecutable = gsPath else {
@@ -464,8 +470,7 @@ class GhostscriptService {
             throw GhostscriptError.inputNotFound(inputURL)
         }
 
-        // Get total page count for progress tracking
-        let totalPages = getPageCount(for: inputURL)
+        let totalPages = pageCount
 
         let process = Process()
         process.executableURL = gsExecutable

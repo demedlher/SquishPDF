@@ -184,8 +184,9 @@ class SquishPDFViewModel: ObservableObject {
         progress = nil
         conversionSuccess = nil
 
-        // Get source DPI for grayscale preset (maintains quality)
+        // Get analysis data for conversion
         let sourceDPI = pdfAnalysis?.avgDPI
+        let pageCount = pdfAnalysis?.pageCount ?? 0
 
         // Generate output filename with preset suffix (e.g., doc-medium-150dpi.pdf)
         let originalFilename = url.deletingPathExtension().lastPathComponent
@@ -199,7 +200,8 @@ class SquishPDFViewModel: ObservableObject {
                     inputURL: url,
                     outputURL: outputURL,
                     preset: selectedPreset,
-                    sourceDPI: sourceDPI
+                    sourceDPI: sourceDPI,
+                    pageCount: pageCount
                 ) { [weak self] progress in
                     self?.progress = progress
                 }
