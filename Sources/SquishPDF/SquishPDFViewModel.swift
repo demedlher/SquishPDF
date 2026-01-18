@@ -12,6 +12,7 @@ class SquishPDFViewModel: ObservableObject {
     @Published var droppedFileURL: URL?
     @Published var originalFileSize: Int64 = 0
     @Published var originalFileName: String = ""
+    @Published var pdfAnalysis: PDFImageAnalysis?
 
     private let ghostscriptService = GhostscriptService()
 
@@ -43,6 +44,17 @@ class SquishPDFViewModel: ObservableObject {
     /// Get estimated size range string for a preset
     func estimatedSizeString(for preset: GhostscriptPreset) -> String {
         guard originalFileSize > 0 else { return "" }
+
+        // If we have PDF analysis, use it for smarter estimates
+        if let analysis = pdfAnalysis, analysis.imageCount > 0 {
+            let ratio = analysis.estimatedRatio(forTargetDPI: preset.dpi)
+            let estimatedSize = Int64(Double(originalFileSize) * ratio)
+
+            // Show single value for DPI-based estimate (more accurate)
+            return Self.formatFileSize(estimatedSize)
+        }
+
+        // Fall back to generic range-based estimate
         let range = preset.estimatedSizeRange(for: originalFileSize)
         let minStr = Self.formatFileSize(range.min)
         let maxStr = Self.formatFileSize(range.max)
@@ -50,6 +62,14 @@ class SquishPDFViewModel: ObservableObject {
             return minStr
         }
         return "\(minStr) - \(maxStr)"
+    }
+
+    /// Check if a preset will be effective based on PDF analysis
+    func isPresetEffective(_ preset: GhostscriptPreset) -> Bool {
+        guard let analysis = pdfAnalysis, analysis.imageCount > 0 else {
+            return true  // Assume effective if no analysis available
+        }
+        return analysis.isPresetEffective(preset)
     }
 
     func handleDroppedFiles(_ providers: [NSItemProvider]) {
@@ -89,6 +109,14 @@ class SquishPDFViewModel: ObservableObject {
         } else {
             originalFileSize = 0
         }
+
+        // Analyze PDF for smarter estimates (runs in background)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let analysis = self?.ghostscriptService.analyzePDF(at: url)
+            DispatchQueue.main.async {
+                self?.pdfAnalysis = analysis
+            }
+        }
     }
 
     /// Clear the current file
@@ -96,6 +124,7 @@ class SquishPDFViewModel: ObservableObject {
         droppedFileURL = nil
         originalFileSize = 0
         originalFileName = ""
+        pdfAnalysis = nil
         lastError = nil
         conversionSuccess = nil
     }

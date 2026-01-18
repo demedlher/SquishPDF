@@ -6,6 +6,7 @@ struct CompressionButton: View {
     let preset: GhostscriptPreset
     let isSelected: Bool
     let estimatedSize: String
+    let isEffective: Bool
     let action: () -> Void
 
     var body: some View {
@@ -27,9 +28,17 @@ struct CompressionButton: View {
                 VStack(alignment: .leading, spacing: Design.Space.xxs) {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(preset.displayName)
-                                .font(.system(size: Design.Font.body, weight: .medium))
-                                .foregroundColor(.primary)
+                            HStack(spacing: 4) {
+                                Text(preset.displayName)
+                                    .font(.system(size: Design.Font.body, weight: .medium))
+                                    .foregroundColor(.primary)
+                                if !isEffective {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.orange)
+                                        .help("Source DPI is already lower than this preset")
+                                }
+                            }
                             Text(preset.description)
                                 .font(.system(size: Design.Font.caption))
                                 .foregroundColor(.secondary)
@@ -112,7 +121,8 @@ struct ContentView: View {
                         CompressionButton(
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,
-                            estimatedSize: viewModel.estimatedSizeString(for: preset)
+                            estimatedSize: viewModel.estimatedSizeString(for: preset),
+                            isEffective: viewModel.isPresetEffective(preset)
                         ) {
                             viewModel.selectedPreset = preset
                         }
@@ -130,7 +140,8 @@ struct ContentView: View {
                         CompressionButton(
                             preset: preset,
                             isSelected: viewModel.selectedPreset == preset,
-                            estimatedSize: viewModel.estimatedSizeString(for: preset)
+                            estimatedSize: viewModel.estimatedSizeString(for: preset),
+                            isEffective: viewModel.isPresetEffective(preset)
                         ) {
                             viewModel.selectedPreset = preset
                         }
@@ -173,6 +184,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: Design.Button.Height.lg)
                 .foregroundColor(.white)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .background(
@@ -181,6 +193,7 @@ struct ContentView: View {
                           ? Color(red: 0.2, green: 0.25, blue: 0.3)
                           : Color.secondary.opacity(0.3))
             )
+            .contentShape(Rectangle())
             .disabled(!viewModel.hasFile || viewModel.isConverting)
         }
         .padding(Design.Space.md)
@@ -244,6 +257,11 @@ struct ContentView: View {
                 Text("Original size: \(SquishPDFViewModel.formatFileSize(viewModel.originalFileSize))")
                     .font(.system(size: Design.Font.label))
                     .foregroundColor(.secondary)
+                if let analysis = viewModel.pdfAnalysis, analysis.imageCount > 0 {
+                    Text("Est. image quality: ~\(analysis.avgDPI) DPI")
+                        .font(.system(size: Design.Font.label))
+                        .foregroundColor(.secondary)
+                }
             }
 
             Spacer()
