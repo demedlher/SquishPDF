@@ -2,17 +2,17 @@
 
 Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file, select the compression level, convert — done. No sprawling settings. No confusing menus. Just results.
 
-## What's New in v2.10
+## What's New in v3.1
 
+- **Multi-file batch processing** - Drop multiple PDFs and process them all at once
+- **Multi-preset selection** - Select multiple compression presets to create different versions in one pass
 - **Visual compression indicators** - 3-segment gauge shows compression potential at a glance (green = will compress, orange = might compress, red = unlikely)
 - **PDF quality analysis** - Detects source DPI and displays quality assessment with compression guidance
 - **Instant tooltips** - Hover over indicators for quick explanations
-- **Conversion progress** - Shows "Page X of Y (Z%)" during conversion
-- **Improved Grayscale** - Uses source DPI to maintain quality while converting to grayscale
 
 | Light Mode | Dark Mode |
 |:----------:|:---------:|
-| ![Light Mode](screenshots/squishPDF-conversion-light-v2.10.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.10.png) |
+| ![Light Mode](screenshots/squishPDF-batch-conversion-light-v3.1.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.10.png) |
 
 ## Features
 
@@ -117,7 +117,7 @@ SquishPDF/
 
 ## Tech Stack
 
-### macOS (v2.10)
+### macOS (v3.1)
 - **Language**: Swift 5.9+
 - **Framework**: SwiftUI
 - **PDF Processing**: Ghostscript (bundled)

@@ -289,7 +289,11 @@ struct ContentView: View {
                 )
 
             if viewModel.hasFile {
-                fileInfoView
+                if viewModel.isSingleFile {
+                    singleFileInfoView
+                } else {
+                    multiFileInfoView
+                }
             } else {
                 emptyDropZone
             }
@@ -308,13 +312,13 @@ struct ContentView: View {
                 .font(.system(size: Design.Icon.lg))
                 .foregroundColor(.white.opacity(0.7))
 
-            Text("Drop your PDF here")
+            Text("Drop your PDFs here")
                 .font(.system(size: Design.Font.body))
                 .foregroundColor(.white.opacity(0.7))
         }
     }
 
-    private var fileInfoView: some View {
+    private var singleFileInfoView: some View {
         HStack(spacing: Design.Space.sm) {
             Image(systemName: "doc.fill")
                 .font(.system(size: Design.Icon.lg))
@@ -350,6 +354,49 @@ struct ContentView: View {
             .help("Remove file")
         }
         .padding(.horizontal, Design.Space.md)
+    }
+
+    private var multiFileInfoView: some View {
+        HStack(spacing: Design.Space.sm) {
+            Image(systemName: "doc.on.doc.fill")
+                .font(.system(size: Design.Icon.lg))
+                .foregroundColor(Color(red: 0.2, green: 0.25, blue: 0.3))
+
+            VStack(alignment: .leading, spacing: Design.Space.xxs) {
+                Text("\(viewModel.fileCount) files selected")
+                    .font(.system(size: Design.Font.body, weight: .medium))
+                    .foregroundColor(.primary)
+                Text("Total size: \(SquishPDFViewModel.formatFileSize(viewModel.totalFileSize))")
+                    .font(.system(size: Design.Font.caption))
+                    .foregroundColor(.secondary)
+                // Show first few filenames
+                Text(fileListSummary)
+                    .font(.system(size: Design.Font.caption))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            Button(action: { viewModel.clearFile() }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: Design.Icon.sm))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+            .help("Remove all files")
+        }
+        .padding(.horizontal, Design.Space.md)
+    }
+
+    private var fileListSummary: String {
+        let names = viewModel.droppedFileURLs.map { $0.lastPathComponent }
+        if names.count <= 3 {
+            return names.joined(separator: ", ")
+        } else {
+            let first3 = names.prefix(3).joined(separator: ", ")
+            return "\(first3), +\(names.count - 3) more"
+        }
     }
 
     // MARK: - Quality Description Helpers
