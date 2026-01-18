@@ -382,23 +382,31 @@ struct ContentView: View {
     @ViewBuilder
     private var statusMessages: some View {
         if let success = viewModel.conversionSuccess {
-            Button(action: { viewModel.revealOutputInFinder() }) {
-                HStack(spacing: Design.Space.xs) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+            HStack(spacing: Design.Space.xs) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+
+                // Filename - click to open
+                Button(action: { viewModel.openOutputFile() }) {
                     Text(success)
                         .font(.system(size: Design.Font.label))
                         .underline()
-                    Image(systemName: "arrow.right.circle")
+                        .foregroundColor(.green)
+                }
+                .buttonStyle(.plain)
+                .help("Click to open file")
+
+                // Folder icon - click to reveal in Finder
+                Button(action: { viewModel.revealOutputInFinder() }) {
+                    Image(systemName: "folder")
                         .font(.system(size: Design.Font.label))
                         .foregroundColor(.green.opacity(0.7))
                 }
-                .foregroundColor(.green)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
+                .help("Reveal in Finder")
             }
-            .buttonStyle(.plain)
-            .help("Click to reveal in Finder")
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         }
 
         if let error = viewModel.lastError {

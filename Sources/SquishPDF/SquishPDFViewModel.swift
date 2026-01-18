@@ -176,6 +176,12 @@ class SquishPDFViewModel: ObservableObject {
         NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
     }
 
+    /// Open the last output file
+    func openOutputFile() {
+        guard let url = lastOutputURL else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     /// Start conversion (called when user clicks Convert button)
     func convert() {
         guard let url = droppedFileURL else {
