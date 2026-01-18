@@ -3,12 +3,12 @@ import UniformTypeIdentifiers
 import AppKit
 
 class SquishPDFViewModel: ObservableObject {
-    @Published var selectedPreset: GhostscriptPreset = .ebook
+    @Published var selectedPresets: Set<GhostscriptPreset> = [.ebook]
     @Published var isConverting = false
     @Published var lastError: String?
     @Published var progress: GhostscriptProgress?
     @Published var conversionSuccess: String?
-    @Published var lastOutputURL: URL?
+    @Published var lastOutputURLs: [URL] = []
 
     // File info
     @Published var droppedFileURL: URL?
@@ -167,18 +167,36 @@ class SquishPDFViewModel: ObservableObject {
         pdfAnalysis = nil
         lastError = nil
         conversionSuccess = nil
-        lastOutputURL = nil
+        lastOutputURLs = []
     }
 
-    /// Reveal the last output file in Finder
+    /// Toggle a preset selection
+    func togglePreset(_ preset: GhostscriptPreset) {
+        if selectedPresets.contains(preset) {
+            // Don't allow deselecting if it's the only one selected
+            if selectedPresets.count > 1 {
+                selectedPresets.remove(preset)
+            }
+        } else {
+            selectedPresets.insert(preset)
+        }
+    }
+
+    /// Check if a preset is selected
+    func isPresetSelected(_ preset: GhostscriptPreset) -> Bool {
+        selectedPresets.contains(preset)
+    }
+
+    /// Reveal the output files in Finder
     func revealOutputInFinder() {
-        guard let url = lastOutputURL else { return }
-        NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
+        guard !lastOutputURLs.isEmpty else { return }
+        // Select all output files in Finder
+        NSWorkspace.shared.activateFileViewerSelecting(lastOutputURLs)
     }
 
-    /// Open the last output file
+    /// Open the first output file
     func openOutputFile() {
-        guard let url = lastOutputURL else { return }
+        guard let url = lastOutputURLs.first else { return }
         NSWorkspace.shared.open(url)
     }
 
@@ -194,53 +212,91 @@ class SquishPDFViewModel: ObservableObject {
             return
         }
 
+        guard !selectedPresets.isEmpty else {
+            lastError = "No presets selected"
+            return
+        }
+
         isConverting = true
         lastError = nil
         progress = nil
         conversionSuccess = nil
-        lastOutputURL = nil
+        lastOutputURLs = []
 
         // Get analysis data for conversion
         let sourceDPI = pdfAnalysis?.avgDPI
         let pageCount = pdfAnalysis?.pageCount ?? 0
-
-        // Generate output filename with preset suffix (e.g., doc-medium-150dpi.pdf)
         let originalFilename = url.deletingPathExtension().lastPathComponent
-        let suffix = selectedPreset.filenameSuffix(withDPI: sourceDPI)
-        let newFilename = "\(originalFilename)-\(suffix).pdf"
-        let outputURL = url.deletingLastPathComponent().appendingPathComponent(newFilename)
+        let presetsToProcess = Array(selectedPresets).sorted { $0.dpi < $1.dpi }
+        let totalPresets = presetsToProcess.count
 
         Task {
-            do {
-                try await ghostscriptService.compressPDF(
-                    inputURL: url,
-                    outputURL: outputURL,
-                    preset: selectedPreset,
-                    sourceDPI: sourceDPI,
-                    pageCount: pageCount
-                ) { [weak self] progress in
-                    self?.progress = progress
-                }
+            var outputURLs: [URL] = []
+            var results: [(filename: String, size: String, reduction: Int)] = []
 
-                // Get compressed file size
-                let compressedSize = try FileManager.default.attributesOfItem(atPath: outputURL.path)[.size] as? Int64 ?? 0
+            for (index, preset) in presetsToProcess.enumerated() {
+                // Generate output filename with preset suffix
+                let suffix = preset.filenameSuffix(withDPI: sourceDPI)
+                let newFilename = "\(originalFilename)-\(suffix).pdf"
+                let outputURL = url.deletingLastPathComponent().appendingPathComponent(newFilename)
 
-                // Calculate reduction percentage
-                let reduction = originalFileSize > 0 ? Int((1.0 - Double(compressedSize) / Double(originalFileSize)) * 100) : 0
-                let compressedSizeStr = Self.formatFileSize(compressedSize)
+                do {
+                    try await ghostscriptService.compressPDF(
+                        inputURL: url,
+                        outputURL: outputURL,
+                        preset: preset,
+                        sourceDPI: sourceDPI,
+                        pageCount: pageCount
+                    ) { [weak self] progressInfo in
+                        // Update progress with preset context
+                        let updatedProgress: GhostscriptProgress
+                        if totalPresets > 1 {
+                            updatedProgress = GhostscriptProgress(
+                                currentPage: progressInfo.currentPage,
+                                totalPages: progressInfo.totalPages,
+                                message: "[\(index + 1)/\(totalPresets)] \(preset.displayName): \(progressInfo.message)"
+                            )
+                        } else {
+                            updatedProgress = progressInfo
+                        }
+                        Task { @MainActor in
+                            self?.progress = updatedProgress
+                        }
+                    }
 
-                await MainActor.run {
-                    self.isConverting = false
-                    self.progress = nil
-                    self.lastOutputURL = outputURL
-                    self.conversionSuccess = "Saved: \(newFilename)\n\(compressedSizeStr) (\(reduction)% smaller)"
+                    // Get compressed file size
+                    let compressedSize = try FileManager.default.attributesOfItem(atPath: outputURL.path)[.size] as? Int64 ?? 0
+                    let reduction = originalFileSize > 0 ? Int((1.0 - Double(compressedSize) / Double(originalFileSize)) * 100) : 0
+                    let compressedSizeStr = Self.formatFileSize(compressedSize)
+
+                    outputURLs.append(outputURL)
+                    results.append((filename: newFilename, size: compressedSizeStr, reduction: reduction))
+
+                } catch {
+                    await MainActor.run {
+                        self.lastError = "Failed on \(preset.displayName): \(error.localizedDescription)"
+                        self.isConverting = false
+                        self.progress = nil
+                    }
+                    return
                 }
-            } catch {
-                await MainActor.run {
-                    self.lastError = error.localizedDescription
-                    self.isConverting = false
-                    self.progress = nil
-                }
+            }
+
+            // Build success message
+            let successMessage: String
+            if results.count == 1 {
+                let r = results[0]
+                successMessage = "Saved: \(r.filename)\n\(r.size) (\(r.reduction)% smaller)"
+            } else {
+                let summary = results.map { "\($0.filename) – \($0.size) (\($0.reduction)%)" }.joined(separator: "\n")
+                successMessage = "Saved \(results.count) files:\n\(summary)"
+            }
+
+            await MainActor.run {
+                self.isConverting = false
+                self.progress = nil
+                self.lastOutputURLs = outputURLs
+                self.conversionSuccess = successMessage
             }
         }
     }

@@ -4,7 +4,7 @@ import Foundation
 /// Updated automatically by build_app.sh before each installer build
 struct AppVersion {
     /// Marketing version (shown prominently)
-    static let version = "2.10"
+    static let version = "3.0"
 
     /// Build number (patch version, incremented with each installer build)
     static let build = 9

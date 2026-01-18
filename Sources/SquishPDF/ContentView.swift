@@ -100,16 +100,19 @@ struct CompressionButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Design.Space.sm) {
-                // Radio button
+                // Checkbox
                 ZStack {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 4)
                         .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 1.5)
                         .frame(width: 18, height: 18)
 
                     if isSelected {
-                        Circle()
+                        RoundedRectangle(cornerRadius: 4)
                             .fill(Color.accentColor)
-                            .frame(width: 10, height: 10)
+                            .frame(width: 18, height: 18)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
 
@@ -191,10 +194,10 @@ struct ContentView: View {
                     ForEach(GhostscriptPreset.standardPresets, id: \.self) { preset in
                         CompressionButton(
                             preset: preset,
-                            isSelected: viewModel.selectedPreset == preset,
+                            isSelected: viewModel.isPresetSelected(preset),
                             effectiveness: viewModel.presetEffectiveness(preset)
                         ) {
-                            viewModel.selectedPreset = preset
+                            viewModel.togglePreset(preset)
                         }
                     }
                 }
@@ -209,10 +212,10 @@ struct ContentView: View {
                     ForEach(GhostscriptPreset.specializedPresets, id: \.self) { preset in
                         CompressionButton(
                             preset: preset,
-                            isSelected: viewModel.selectedPreset == preset,
+                            isSelected: viewModel.isPresetSelected(preset),
                             effectiveness: viewModel.presetEffectiveness(preset)
                         ) {
-                            viewModel.selectedPreset = preset
+                            viewModel.togglePreset(preset)
                         }
                     }
                 }
