@@ -19,6 +19,6 @@ struct AppVersion {
 
     /// Version with build info for About panel
     static var versionWithBuild: String {
-        "\(version).\(build) (\(commit))"
+        "\(version).\(build) build \(commit)"
     }
 }
