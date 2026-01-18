@@ -44,13 +44,17 @@ else
     exit 1
 fi
 
+# PDF library being used (for comparing alternatives in the future)
+PDF_LIBRARY="ghostscript-$(gs --version 2>/dev/null || echo 'unknown')"
+
 echo "=========================================="
 echo "  SquishPDF Performance Benchmark"
 echo "=========================================="
-echo "Release: $RELEASE"
-echo "Build:   $BUILD_HASH"
-echo "Date:    $TIMESTAMP"
-echo "GS:      $GS_PATH"
+echo "Release:  $RELEASE"
+echo "Build:    $BUILD_HASH"
+echo "Date:     $TIMESTAMP"
+echo "GS Path:  $GS_PATH"
+echo "Library:  $PDF_LIBRARY"
 echo ""
 
 # Create output directory
@@ -58,7 +62,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # Create CSV header if file doesn't exist
 if [ ! -f "$RESULTS_FILE" ]; then
-    echo "release,build,timestamp,source_file,source_size_bytes,preset,compressed_size_bytes,compression_time_ms,compression_ratio" > "$RESULTS_FILE"
+    echo "release,build,timestamp,pdf_library,source_file,source_size_bytes,preset,compressed_size_bytes,compression_time_ms,compression_ratio" > "$RESULTS_FILE"
 fi
 
 # Get GS arguments for each preset
@@ -140,13 +144,13 @@ for pdf_file in "$SAMPLE_DIR"/*.pdf; do
                 "$compression_time"
 
             # Append to CSV
-            echo "$RELEASE,$BUILD_HASH,$TIMESTAMP,$filename,$source_size,$preset,$compressed_size,$compression_time,$ratio" >> "$RESULTS_FILE"
+            echo "$RELEASE,$BUILD_HASH,$TIMESTAMP,$PDF_LIBRARY,$filename,$source_size,$preset,$compressed_size,$compression_time,$ratio" >> "$RESULTS_FILE"
 
             # Clean up benchmark output
             rm -f "$output_file"
         else
             echo "  $preset: FAILED"
-            echo "$RELEASE,$BUILD_HASH,$TIMESTAMP,$filename,$source_size,$preset,FAILED,0,0" >> "$RESULTS_FILE"
+            echo "$RELEASE,$BUILD_HASH,$TIMESTAMP,$PDF_LIBRARY,$filename,$source_size,$preset,FAILED,0,0" >> "$RESULTS_FILE"
         fi
     done
     echo ""

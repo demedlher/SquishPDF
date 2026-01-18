@@ -77,12 +77,15 @@ Results are stored in `docs/performance-history.csv`:
 | `release` | Version tag or "dev" | v2.10 |
 | `build` | Git commit hash (short) | 9239dd9 |
 | `timestamp` | When benchmark was run | 2026-01-18 12:38:02 |
+| `pdf_library` | PDF processing library used | ghostscript-10.05.0 |
 | `source_file` | Original PDF filename | brochure.pdf |
 | `source_size_bytes` | Original file size | 20971520 |
 | `preset` | Compression preset used | medium |
 | `compressed_size_bytes` | Resulting file size | 8388608 |
 | `compression_time_ms` | Time to compress | 5845 |
 | `compression_ratio` | compressed/source | 0.40 |
+
+The `pdf_library` column enables comparing different PDF processing libraries (e.g., Ghostscript vs alternatives) across releases.
 
 ## Analyzing Results
 
