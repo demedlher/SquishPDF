@@ -39,10 +39,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func showAboutPanel() {
-        let year = Calendar.current.component(.year, from: Date())
-
         let creditsText = """
-        © \(year) Demed L'Her
+        © 2025 Demed L'Her – Dedicated-Labs.com
         AGPL-3.0 License
 
         Compress PDFs while preserving text selectability.
