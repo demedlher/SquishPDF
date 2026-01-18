@@ -5,6 +5,7 @@ import AppKit
 /// 3-segment compression potential indicator
 struct CompressionIndicator: View {
     let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
+    @State private var isHovering = false
 
     private let segmentWidth: CGFloat = 12
     private let segmentHeight: CGFloat = 6
@@ -27,7 +28,30 @@ struct CompressionIndicator: View {
                 .fill(segment3Color)
                 .frame(width: segmentWidth, height: segmentHeight)
         }
-        .help(helpText)
+        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if isHovering {
+                Text(helpText)
+                    .font(.system(size: 11))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .cornerRadius(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 0.5)
+                    )
+                    .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 1)
+                    .fixedSize()
+                    .offset(x: 0, y: -20)
+            }
+        }
     }
 
     private var segment1Color: Color {
@@ -60,9 +84,9 @@ struct CompressionIndicator: View {
     private var helpText: String {
         guard let eff = effectiveness else { return "Drop a PDF to see compression potential" }
         switch eff {
-        case .unlikely: return "Unlikely to reduce file size"
-        case .marginal: return "May provide some compression"
-        case .definite: return "Good compression expected"
+        case .unlikely: return "Unlikely to compress"
+        case .marginal: return "Might compress some"
+        case .definite: return "Will compress"
         }
     }
 }
@@ -257,7 +281,7 @@ struct ContentView: View {
 
             RoundedRectangle(cornerRadius: Design.Radius.lg)
                 .stroke(
-                    viewModel.hasFile ? Color.green.opacity(0.6) : Color.white.opacity(0.15),
+                    viewModel.hasFile ? Color(red: 0.2, green: 0.25, blue: 0.3).opacity(0.6) : Color.white.opacity(0.15),
                     style: StrokeStyle(lineWidth: 1.5, dash: viewModel.hasFile ? [] : [6])
                 )
 
@@ -291,7 +315,7 @@ struct ContentView: View {
         HStack(spacing: Design.Space.sm) {
             Image(systemName: "doc.fill")
                 .font(.system(size: Design.Icon.lg))
-                .foregroundColor(.green)
+                .foregroundColor(Color(red: 0.2, green: 0.25, blue: 0.3))
 
             VStack(alignment: .leading, spacing: Design.Space.xxs) {
                 Text(viewModel.originalFileName)
@@ -300,12 +324,15 @@ struct ContentView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Text("Original size: \(SquishPDFViewModel.formatFileSize(viewModel.originalFileSize))")
-                    .font(.system(size: Design.Font.label))
+                    .font(.system(size: Design.Font.caption))
                     .foregroundColor(.secondary)
                 if let analysis = viewModel.pdfAnalysis, analysis.imageCount > 0 {
                     Text("Est. image quality: ~\(analysis.avgDPI) DPI")
-                        .font(.system(size: Design.Font.label))
+                        .font(.system(size: Design.Font.caption))
                         .foregroundColor(.secondary)
+                    Text(qualityDescription(for: analysis.avgDPI))
+                        .font(.system(size: Design.Font.caption))
+                        .foregroundColor(qualityColor(for: analysis.avgDPI))
                 }
             }
 
@@ -320,6 +347,34 @@ struct ContentView: View {
             .help("Remove file")
         }
         .padding(.horizontal, Design.Space.md)
+    }
+
+    // MARK: - Quality Description Helpers
+
+    private func qualityDescription(for dpi: Int) -> String {
+        switch dpi {
+        case 300...:
+            return "High quality source – likely to compress well"
+        case 150..<300:
+            return "Good quality source – should compress"
+        case 72..<150:
+            return "Medium quality source – may compress some more"
+        default:
+            return "Low quality source – unlikely to compress more"
+        }
+    }
+
+    private func qualityColor(for dpi: Int) -> Color {
+        switch dpi {
+        case 300...:
+            return .green
+        case 150..<300:
+            return .green.opacity(0.8)
+        case 72..<150:
+            return .orange
+        default:
+            return .red.opacity(0.8)
+        }
     }
 
     // MARK: - Status Messages

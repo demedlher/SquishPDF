@@ -4,15 +4,15 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
 
 ## What's New in v2.10
 
-- **Smart size estimates** - Multi-parameter analysis shows realistic estimate ranges based on PDF content
-- **PDF analysis** - Detects image DPI, compression type, and content ratio on file drop
-- **Effectiveness indicators** - Green dot for definite compression, warning for unlikely benefit
+- **Visual compression indicators** - 3-segment gauge shows compression potential at a glance (green = will compress, orange = might compress, red = unlikely)
+- **PDF quality analysis** - Detects source DPI and displays quality assessment with compression guidance
+- **Instant tooltips** - Hover over indicators for quick explanations
 - **Conversion progress** - Shows "Page X of Y (Z%)" during conversion
-- **Improved Grayscale** - Now uses source DPI to maintain quality while converting to grayscale
+- **Improved Grayscale** - Uses source DPI to maintain quality while converting to grayscale
 
 | Light Mode | Dark Mode |
 |:----------:|:---------:|
-| ![Light Mode](screenshots/squishPDF-conversion-light-v2.9.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.9.png) |
+| ![Light Mode](screenshots/squishPDF-conversion-light-v2.10.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.10.png) |
 
 ## Features
 
@@ -25,9 +25,9 @@ Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file
   - **X-Large** - Maximum quality for commercial print
   - **Grayscale** (source DPI) - Converts to grayscale while maintaining quality
   - **Web** (72 DPI) - Web-optimized with stripped metadata and subset fonts
-- **Smart PDF analysis** - Detects image DPI and shows estimated quality on drop
-- **Effectiveness indicators** - See which presets will actually help compress your specific PDF
-- **Estimated size ranges** - Realistic estimates based on content analysis
+- **Smart PDF analysis** - Detects image DPI and shows quality assessment with compression guidance
+- **Visual compression indicators** - 3-segment gauge on each preset shows compression potential
+- **Instant tooltips** - Hover over indicators for quick explanations
 - Text remains searchable and selectable after compression
 - Automatic file naming with preset suffix (e.g., `document-medium-150dpi.pdf`)
 
