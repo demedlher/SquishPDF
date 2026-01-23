@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 @main
 struct SquishPDFApp: App {
@@ -23,6 +24,12 @@ struct SquishPDFApp: App {
                 Button("About SquishPDF") {
                     appDelegate.showAboutPanel()
                 }
+            }
+            CommandGroup(after: .help) {
+                Button("Run Benchmark...") {
+                    appDelegate.runBenchmark()
+                }
+                .keyboardShortcut("B", modifiers: [.command, .option])
             }
         }
     }
@@ -63,5 +70,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .version: AppVersion.versionWithBuild,
             .credits: credits
         ])
+    }
+
+    func runBenchmark() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.pdf]
+        panel.allowsMultipleSelection = true
+        panel.message = "Select PDF files to benchmark"
+
+        if panel.runModal() == .OK {
+            Task {
+                let engines: [CompressionEngine] = [
+                    GhostscriptEngine(),
+                    NativeCompressionEngine()
+                ]
+                let benchmark = CompressionBenchmark(engines: engines)
+
+                var allResults: [BenchmarkResult] = []
+                for url in panel.urls {
+                    let results = await benchmark.benchmark(file: url)
+                    allResults.append(contentsOf: results)
+                }
+
+                let markdown = CompressionBenchmark.formatAsMarkdown(allResults)
+                print(markdown)
+
+                // Also save to Desktop
+                let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
+                let outputURL = desktopURL.appendingPathComponent("benchmark-results.md")
+                try? markdown.write(to: outputURL, atomically: true, encoding: .utf8)
+                NSWorkspace.shared.open(outputURL)
+            }
+        }
     }
 }
