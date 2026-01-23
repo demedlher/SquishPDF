@@ -51,19 +51,107 @@ class PDFImageExtractor {
             return images
         }
 
+        // Context for the closure
+        var extractionContext = ExtractionContext(
+            extractor: self,
+            pageIndex: pageIndex,
+            images: []
+        )
+
         // Iterate through XObjects
-        CGPDFDictionaryApplyBlock(xObjects) { (key, value, _) -> Bool in
+        withUnsafeMutablePointer(to: &extractionContext) { contextPtr in
+            CGPDFDictionaryApplyBlock(xObjects, { (key, value, info) -> Bool in
+                guard let context = info?.assumingMemoryBound(to: ExtractionContext.self).pointee else {
+                    return true
+                }
+
+                let name = String(cString: key)
+
+                // Check if this is an image stream
+                var stream: CGPDFStreamRef?
+                guard CGPDFObjectGetValue(value, .stream, &stream),
+                      let imageStream = stream else {
+                    return true  // Continue iteration
+                }
+
+                guard let streamDict = CGPDFStreamGetDictionary(imageStream) else {
+                    return true
+                }
+
+                // Verify it's an Image subtype
+                var subtypeName: UnsafePointer<Int8>?
+                guard CGPDFDictionaryGetName(streamDict, "Subtype", &subtypeName),
+                      let subtype = subtypeName,
+                      String(cString: subtype) == "Image" else {
+                    return true
+                }
+
+                // Extract image properties
+                var width: CGPDFInteger = 0
+                var height: CGPDFInteger = 0
+                var bitsPerComponent: CGPDFInteger = 8
+
+                CGPDFDictionaryGetInteger(streamDict, "Width", &width)
+                CGPDFDictionaryGetInteger(streamDict, "Height", &height)
+                CGPDFDictionaryGetInteger(streamDict, "BitsPerComponent", &bitsPerComponent)
+
+                // Get color space name
+                var colorSpaceName = "Unknown"
+                var csName: UnsafePointer<Int8>?
+                if CGPDFDictionaryGetName(streamDict, "ColorSpace", &csName),
+                   let csNamePtr = csName {
+                    colorSpaceName = String(cString: csNamePtr)
+                }
+
+                // Try to extract the image data and create CGImage
+                if let cgImage = context.extractor.createCGImage(from: imageStream, dict: streamDict) {
+                    let extracted = ExtractedImage(
+                        name: name,
+                        pageIndex: context.pageIndex,
+                        cgImage: cgImage,
+                        originalWidth: Int(width),
+                        originalHeight: Int(height),
+                        bitsPerComponent: Int(bitsPerComponent),
+                        colorSpaceName: colorSpaceName
+                    )
+                    // We can't mutate context here, so we'll use a different approach
+                }
+
+                return true  // Continue iteration
+            }, contextPtr)
+        }
+
+        // Alternative simpler approach: enumerate dictionary keys manually
+        images = extractImagesSimple(from: xObjects, pageIndex: pageIndex)
+
+        return images
+    }
+
+    /// Simpler extraction approach using CGPDFDictionaryGetCount and iteration
+    private func extractImagesSimple(from xObjects: CGPDFDictionaryRef, pageIndex: Int) -> [ExtractedImage] {
+        var images: [ExtractedImage] = []
+
+        // Get all keys from the dictionary
+        let count = CGPDFDictionaryGetCount(xObjects)
+        guard count > 0 else { return images }
+
+        // Use apply function with a class wrapper to collect results
+        var collector = ImageCollector(extractor: self, pageIndex: pageIndex)
+
+        CGPDFDictionaryApplyFunction(xObjects, { (key, value, info) in
+            guard let collector = info?.assumingMemoryBound(to: ImageCollector.self).pointee else { return }
+
             let name = String(cString: key)
 
-            // Check if this is an image
+            // Check if this is an image stream
             var stream: CGPDFStreamRef?
             guard CGPDFObjectGetValue(value, .stream, &stream),
                   let imageStream = stream else {
-                return true  // Continue iteration
+                return
             }
 
             guard let streamDict = CGPDFStreamGetDictionary(imageStream) else {
-                return true
+                return
             }
 
             // Verify it's an Image subtype
@@ -71,7 +159,7 @@ class PDFImageExtractor {
             guard CGPDFDictionaryGetName(streamDict, "Subtype", &subtypeName),
                   let subtype = subtypeName,
                   String(cString: subtype) == "Image" else {
-                return true
+                return
             }
 
             // Extract image properties
@@ -87,32 +175,30 @@ class PDFImageExtractor {
             var colorSpaceName = "Unknown"
             var csName: UnsafePointer<Int8>?
             if CGPDFDictionaryGetName(streamDict, "ColorSpace", &csName),
-               let csNamePtr = csName {
+                let csNamePtr = csName {
                 colorSpaceName = String(cString: csNamePtr)
             }
 
             // Try to extract the image data and create CGImage
-            if let cgImage = self.createCGImage(from: imageStream, dict: streamDict) {
+            if let cgImage = collector.extractor.createCGImage(from: imageStream, dict: streamDict) {
                 let extracted = ExtractedImage(
                     name: name,
-                    pageIndex: pageIndex,
+                    pageIndex: collector.pageIndex,
                     cgImage: cgImage,
                     originalWidth: Int(width),
                     originalHeight: Int(height),
                     bitsPerComponent: Int(bitsPerComponent),
                     colorSpaceName: colorSpaceName
                 )
-                images.append(extracted)
+                collector.images.append(extracted)
             }
+        }, withUnsafeMutablePointer(to: &collector) { $0 })
 
-            return true  // Continue iteration
-        }
-
-        return images
+        return collector.images
     }
 
     /// Create a CGImage from a PDF image stream
-    private func createCGImage(from stream: CGPDFStreamRef, dict: CGPDFDictionaryRef) -> CGImage? {
+    fileprivate func createCGImage(from stream: CGPDFStreamRef, dict: CGPDFDictionaryRef) -> CGImage? {
         var format: CGPDFDataFormat = .raw
         guard let data = CGPDFStreamCopyData(stream, &format) else {
             return nil
@@ -128,7 +214,7 @@ class PDFImageExtractor {
 
         // Handle different compression formats
         switch format {
-        case .JPEG, .JPEG2000:
+        case .jpegEncoded, .JPEG2000:
             // Already compressed image data - decode via ImageIO
             guard let dataProvider = CGDataProvider(data: data),
                   let image = CGImage(jpegDataProviderSource: dataProvider,
@@ -201,5 +287,24 @@ class PDFImageExtractor {
             shouldInterpolate: true,
             intent: .defaultIntent
         )
+    }
+}
+
+/// Context for extraction closure
+private struct ExtractionContext {
+    let extractor: PDFImageExtractor
+    let pageIndex: Int
+    var images: [ExtractedImage]
+}
+
+/// Class wrapper for collecting images (allows mutation in C callback)
+private class ImageCollector {
+    let extractor: PDFImageExtractor
+    let pageIndex: Int
+    var images: [ExtractedImage] = []
+
+    init(extractor: PDFImageExtractor, pageIndex: Int) {
+        self.extractor = extractor
+        self.pageIndex = pageIndex
     }
 }
