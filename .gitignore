@@ -38,3 +38,6 @@ sample-docs/
 screenshots/*
 !screenshots/squishPDF-batch-conversion-light-v3.1.png
 !screenshots/squishPDF-conversion-dark-v2.10.png
+
+# Worktrees
+.worktrees/
