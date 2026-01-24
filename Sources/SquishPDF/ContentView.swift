@@ -2,297 +2,194 @@ import SwiftUI
 import UniformTypeIdentifiers
 import AppKit
 
-// MARK: - Compression Indicator
+// MARK: - Design Constants
 
-struct CompressionIndicator: View {
-    let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
-    @State private var isHovering = false
+private enum UI {
+    enum Color {
+        static let textPrimary = SwiftUI.Color(NSColor.labelColor)
+        static let textSecondary = SwiftUI.Color(NSColor.secondaryLabelColor)
+        static let textTertiary = SwiftUI.Color(NSColor.tertiaryLabelColor)
+        static let accent = SwiftUI.Color.accentColor
+        static let success = SwiftUI.Color(red: 0.2, green: 0.78, blue: 0.35)
+        static let background = SwiftUI.Color(NSColor.windowBackgroundColor)
+        static let cardBackground = SwiftUI.Color(NSColor.controlBackgroundColor)
+        static let selectionBackground = SwiftUI.Color.accentColor.opacity(0.06)
+    }
 
-    private let segmentWidth: CGFloat = 12
-    private let segmentHeight: CGFloat = 6
-    private let segmentSpacing: CGFloat = 2
+    enum Spacing {
+        static let xxs: CGFloat = 4
+        static let xs: CGFloat = 6
+        static let sm: CGFloat = 12
+        static let md: CGFloat = 14
+        static let lg: CGFloat = 16
+        static let xl: CGFloat = 20
+        static let xxl: CGFloat = 24
+        static let xxxl: CGFloat = 28
+    }
 
+    enum Radius {
+        static let sm: CGFloat = 6
+        static let md: CGFloat = 8
+        static let lg: CGFloat = 12
+    }
+
+    enum Font {
+        static let caption: CGFloat = 12
+        static let body: CGFloat = 14
+        static let title: CGFloat = 15
+        static let headline: CGFloat = 18
+    }
+}
+
+// MARK: - PDF Icon View
+
+struct PDFIconView: View {
     var body: some View {
-        HStack(spacing: segmentSpacing) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(segment1Color)
-                .frame(width: segmentWidth, height: segmentHeight)
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(segment2Color)
-                .frame(width: segmentWidth, height: segmentHeight)
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(segment3Color)
-                .frame(width: segmentWidth, height: segmentHeight)
-        }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 2)
-    }
+        ZStack {
+            RoundedRectangle(cornerRadius: UI.Radius.sm)
+                .fill(LinearGradient(
+                    colors: [Color(red: 1, green: 0.42, blue: 0.42), Color(red: 0.93, green: 0.35, blue: 0.35)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+                .frame(width: 44, height: 52)
+                .shadow(color: Color(red: 0.93, green: 0.35, blue: 0.35).opacity(0.3), radius: 4, x: 0, y: 2)
 
-    private var segment1Color: Color {
-        guard let eff = effectiveness else { return Color.secondary.opacity(0.3) }
-        switch eff {
-        case .unlikely: return Color.red.opacity(0.7)
-        case .marginal: return Color.orange.opacity(0.7)
-        case .definite: return Color.green.opacity(0.7)
-        }
-    }
-
-    private var segment2Color: Color {
-        guard let eff = effectiveness else { return Color.secondary.opacity(0.3) }
-        switch eff {
-        case .unlikely: return Color.secondary.opacity(0.3)
-        case .marginal: return Color.orange.opacity(0.7)
-        case .definite: return Color.green.opacity(0.7)
-        }
-    }
-
-    private var segment3Color: Color {
-        guard let eff = effectiveness else { return Color.secondary.opacity(0.3) }
-        switch eff {
-        case .unlikely: return Color.secondary.opacity(0.3)
-        case .marginal: return Color.secondary.opacity(0.3)
-        case .definite: return Color.green.opacity(0.7)
+            Text("PDF")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.white)
+                .tracking(0.3)
         }
     }
 }
 
-// MARK: - Ghostscript Preset Button (Radio - Single Mode)
+// MARK: - Preset Row View
 
-struct GSPresetRadioButton: View {
-    let preset: GhostscriptPreset
-    let isSelected: Bool
-    let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: Design.Space.sm) {
-                ZStack {
-                    Circle()
-                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 1.5)
-                        .frame(width: 18, height: 18)
-
-                    if isSelected {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 10, height: 10)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(preset.displayName)
-                        .font(.system(size: Design.Font.body, weight: .medium))
-                        .foregroundColor(.primary)
-                    Text(preset.description)
-                        .font(.system(size: Design.Font.caption))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                CompressionIndicator(effectiveness: effectiveness)
-            }
-            .padding(.vertical, Design.Space.xs)
-            .padding(.horizontal, Design.Space.sm)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .fill(isSelected ? Color.accentColor.opacity(0.08) : Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.secondary.opacity(0.2), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Ghostscript Preset Button (Checkbox - Batch Mode)
-
-struct GSPresetCheckboxButton: View {
-    let preset: GhostscriptPreset
-    let isSelected: Bool
-    let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: Design.Space.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 1.5)
-                        .frame(width: 18, height: 18)
-
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.accentColor)
-                            .frame(width: 18, height: 18)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(preset.displayName)
-                        .font(.system(size: Design.Font.body, weight: .medium))
-                        .foregroundColor(.primary)
-                    Text(preset.description)
-                        .font(.system(size: Design.Font.caption))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                CompressionIndicator(effectiveness: effectiveness)
-            }
-            .padding(.vertical, Design.Space.xs)
-            .padding(.horizontal, Design.Space.sm)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .fill(isSelected ? Color.accentColor.opacity(0.08) : Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.secondary.opacity(0.2), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Native Preset Button (Radio - Single Mode)
-
-struct NativePresetRadioButton: View {
+struct PresetRowView: View {
     let preset: CompressionPreset
     let isSelected: Bool
+    let isCheckbox: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Design.Space.sm) {
+            HStack(spacing: UI.Spacing.md) {
+                // Radio or Checkbox
                 ZStack {
-                    Circle()
-                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 1.5)
-                        .frame(width: 18, height: 18)
-
-                    if isSelected {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 10, height: 10)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(preset.displayName)
-                        .font(.system(size: Design.Font.body, weight: .medium))
-                        .foregroundColor(.primary)
-                    Text(preset.description)
-                        .font(.system(size: Design.Font.caption))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Text("\(preset.targetDPI) DPI")
-                    .font(.system(size: Design.Font.caption, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.1))
-                    .cornerRadius(4)
-            }
-            .padding(.vertical, Design.Space.xs)
-            .padding(.horizontal, Design.Space.sm)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .fill(isSelected ? Color.accentColor.opacity(0.08) : Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.secondary.opacity(0.2), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Native Preset Button (Checkbox - Batch Mode)
-
-struct NativePresetCheckboxButton: View {
-    let preset: CompressionPreset
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: Design.Space.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 1.5)
-                        .frame(width: 18, height: 18)
-
-                    if isSelected {
+                    if isCheckbox {
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.accentColor)
+                            .stroke(isSelected ? UI.Color.accent : UI.Color.textTertiary, lineWidth: 2)
                             .frame(width: 18, height: 18)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.white)
+
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(UI.Color.accent)
+                                .frame(width: 18, height: 18)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    } else {
+                        Circle()
+                            .stroke(isSelected ? UI.Color.accent : UI.Color.textTertiary, lineWidth: 2)
+                            .frame(width: 18, height: 18)
+
+                        if isSelected {
+                            Circle()
+                                .fill(UI.Color.accent)
+                                .frame(width: 18, height: 18)
+                            Circle()
+                                .fill(.white)
+                                .frame(width: 6, height: 6)
+                        }
                     }
                 }
 
+                // Content
                 VStack(alignment: .leading, spacing: 2) {
                     Text(preset.displayName)
-                        .font(.system(size: Design.Font.body, weight: .medium))
-                        .foregroundColor(.primary)
+                        .font(.system(size: UI.Font.body, weight: .medium))
+                        .foregroundColor(UI.Color.textPrimary)
                     Text(preset.description)
-                        .font(.system(size: Design.Font.caption))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: UI.Font.caption))
+                        .foregroundColor(UI.Color.textSecondary)
                 }
 
                 Spacer()
 
+                // DPI Badge
                 Text("\(preset.targetDPI) DPI")
-                    .font(.system(size: Design.Font.caption, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.1))
-                    .cornerRadius(4)
+                    .font(.system(size: UI.Font.caption, weight: .medium))
+                    .foregroundColor(isSelected ? UI.Color.accent : UI.Color.textTertiary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(isSelected ? UI.Color.accent.opacity(0.1) : Color.black.opacity(0.04))
+                    .cornerRadius(UI.Radius.sm)
             }
-            .padding(.vertical, Design.Space.xs)
-            .padding(.horizontal, Design.Space.sm)
+            .padding(.vertical, UI.Spacing.md)
+            .padding(.horizontal, UI.Spacing.lg)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .background(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .fill(isSelected ? Color.accentColor.opacity(0.08) : Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .fill(UI.Color.cardBackground)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.secondary.opacity(0.2), lineWidth: 1)
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .stroke(isSelected ? UI.Color.accent : Color.clear, lineWidth: 1.5)
+        )
+        .background(
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .fill(isSelected ? UI.Color.selectionBackground : Color.clear)
         )
     }
 }
 
-// MARK: - Section Header
+// MARK: - Success Banner View
 
-struct SectionHeader: View {
-    let title: String
+struct SuccessBannerView: View {
+    let reductionPercent: Int
+    let outputSize: String
+    let onShow: () -> Void
 
     var body: some View {
-        Text(title)
-            .font(.system(size: Design.Font.body, weight: .semibold))
-            .foregroundColor(Color(red: 0.25, green: 0.3, blue: 0.4))
+        HStack(spacing: UI.Spacing.sm) {
+            // Success icon
+            ZStack {
+                Circle()
+                    .fill(UI.Color.success)
+                    .frame(width: 28, height: 28)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+            }
+
+            // Content
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(reductionPercent)% smaller")
+                    .font(.system(size: UI.Font.headline, weight: .semibold))
+                    .foregroundColor(UI.Color.textPrimary)
+                Text("\(outputSize) • Saved to original folder")
+                    .font(.system(size: UI.Font.caption))
+                    .foregroundColor(UI.Color.textSecondary)
+            }
+
+            Spacer()
+
+            // Show button
+            Button(action: onShow) {
+                Text("Show")
+                    .font(.system(size: UI.Font.caption, weight: .medium))
+                    .foregroundColor(UI.Color.accent)
+                    .padding(.horizontal, UI.Spacing.sm)
+                    .padding(.vertical, UI.Spacing.xs)
+            }
+            .buttonStyle(.plain)
+            .background(Color.clear)
+            .contentShape(Rectangle())
+        }
+        .padding(.vertical, UI.Spacing.md)
     }
 }
 
@@ -302,404 +199,297 @@ struct ContentView: View {
     @StateObject private var viewModel = SquishPDFViewModel()
 
     var body: some View {
-        VStack(spacing: Design.Space.sm) {
-            // Drop Zone
-            dropZone
+        VStack(spacing: 0) {
+            VStack(spacing: UI.Spacing.xxxl) {
+                // File Zone
+                fileZone
 
-            Spacer().frame(height: Design.Space.xs)
+                // Mode Toggle + Presets
+                VStack(spacing: UI.Spacing.xl) {
+                    modeToggle
+                    presetsSection
+                }
 
-            // Mode Toggle
-            modeToggle
-
-            // Compression presets section
-            presetsSection
-
-            // Status messages
-            statusMessages
+                // Success or Error messages
+                statusArea
+            }
 
             Spacer()
 
-            // Info text
-            infoText
-
-            // Convert button
-            convertButton
-        }
-        .padding(Design.Space.md)
-        .background(Color(NSColor.windowBackgroundColor))
-    }
-
-    // MARK: - Mode Toggle
-
-    private var modeToggle: some View {
-        HStack {
-            Toggle(isOn: $viewModel.isBatchMode) {
-                HStack(spacing: Design.Space.xxs) {
-                    Image(systemName: viewModel.isBatchMode ? "doc.on.doc" : "doc")
-                        .font(.system(size: Design.Font.caption))
-                    Text(viewModel.isBatchMode ? "Batch mode" : "Single file")
-                        .font(.system(size: Design.Font.body, weight: .medium))
-                }
-            }
-            .toggleStyle(.switch)
-            .controlSize(.small)
-
-            Spacer()
-
-            // Engine badge (informational)
-            HStack(spacing: Design.Space.xxs) {
-                Image(systemName: activeBackend == .native ? "apple.logo" : "terminal")
-                    .font(.system(size: Design.Font.caption))
-                Text(activeBackend == .native ? "Native" : "Ghostscript")
-                    .font(.system(size: Design.Font.caption))
-            }
-            .padding(.horizontal, Design.Space.xs)
-            .padding(.vertical, Design.Space.xxs)
-            .background(activeBackend == .native ? Color.blue.opacity(0.12) : Color.green.opacity(0.12))
-            .foregroundColor(activeBackend == .native ? .blue : .green)
-            .cornerRadius(Design.Radius.sm)
-        }
-    }
-
-    // MARK: - Presets Section
-
-    private var presetsSection: some View {
-        VStack(alignment: .leading, spacing: Design.Space.sm) {
-            HStack {
-                SectionHeader(title: "Compression presets")
-                if viewModel.isBatchMode {
-                    Text("(select multiple)")
-                        .font(.system(size: Design.Font.caption))
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            switch activeBackend {
-            case .ghostscript:
-                ghostscriptPresets
-            case .native:
-                nativePresets
+            // Bottom section
+            VStack(spacing: UI.Spacing.lg) {
+                infoText
+                compressButton
             }
         }
+        .padding(UI.Spacing.xxl)
+        .background(UI.Color.background)
     }
 
-    private var ghostscriptPresets: some View {
-        VStack(spacing: Design.Space.xs) {
-            // Standard presets
-            ForEach(GhostscriptPreset.standardPresets, id: \.self) { preset in
-                if viewModel.isBatchMode {
-                    GSPresetCheckboxButton(
-                        preset: preset,
-                        isSelected: viewModel.isGSPresetSelected(preset),
-                        effectiveness: viewModel.presetEffectiveness(preset)
-                    ) {
-                        viewModel.toggleGSPreset(preset)
-                    }
-                } else {
-                    GSPresetRadioButton(
-                        preset: preset,
-                        isSelected: viewModel.selectedGSPreset == preset,
-                        effectiveness: viewModel.presetEffectiveness(preset)
-                    ) {
-                        viewModel.selectGSPreset(preset)
-                    }
-                }
-            }
+    // MARK: - File Zone
 
-            // Specialized presets
-            VStack(alignment: .leading, spacing: Design.Space.xs) {
-                Text("Specialized")
-                    .font(.system(size: Design.Font.caption, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .padding(.top, Design.Space.xxs)
-
-                ForEach(GhostscriptPreset.specializedPresets, id: \.self) { preset in
-                    if viewModel.isBatchMode {
-                        GSPresetCheckboxButton(
-                            preset: preset,
-                            isSelected: viewModel.isGSPresetSelected(preset),
-                            effectiveness: viewModel.presetEffectiveness(preset)
-                        ) {
-                            viewModel.toggleGSPreset(preset)
-                        }
-                    } else {
-                        GSPresetRadioButton(
-                            preset: preset,
-                            isSelected: viewModel.selectedGSPreset == preset,
-                            effectiveness: viewModel.presetEffectiveness(preset)
-                        ) {
-                            viewModel.selectGSPreset(preset)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var nativePresets: some View {
-        VStack(spacing: Design.Space.xs) {
-            ForEach(CompressionPreset.all, id: \.id) { preset in
-                if viewModel.isBatchMode {
-                    NativePresetCheckboxButton(
-                        preset: preset,
-                        isSelected: viewModel.isNativePresetSelected(preset)
-                    ) {
-                        viewModel.toggleNativePreset(preset)
-                    }
-                } else {
-                    NativePresetRadioButton(
-                        preset: preset,
-                        isSelected: viewModel.selectedNativePreset == preset
-                    ) {
-                        viewModel.selectNativePreset(preset)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Info Text
-
-    private var infoText: some View {
-        VStack(spacing: Design.Space.xs) {
-            if activeBackend == .native {
-                HStack(spacing: Design.Space.xxs) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: Design.Font.caption))
-                    Text("Native mode: Pages are rasterized. Text will not be selectable.")
-                        .font(.system(size: Design.Font.caption))
-                }
-                .foregroundColor(.orange)
-                .padding(Design.Space.xs)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(Design.Radius.sm)
-            }
-
-            Text("Your original PDF will not be modified. The converted file will be placed next to the original.")
-                .font(.system(size: Design.Font.caption))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-        }
-    }
-
-    // MARK: - Convert Button
-
-    private var convertButton: some View {
-        Button(action: { viewModel.convert() }) {
-            HStack(spacing: Design.Space.xs) {
-                if viewModel.isConverting {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .frame(width: Design.Icon.xs, height: Design.Icon.xs)
-                    if let message = viewModel.progressMessage {
-                        Text(message)
-                    } else {
-                        Text("Converting...")
-                    }
-                } else {
-                    Image(systemName: "arrow.down.doc.fill")
-                    Text("Convert")
-                        .font(.system(size: Design.Font.body, weight: .medium))
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: Design.Button.Height.lg)
-            .foregroundColor(.white)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: Design.Radius.md)
-                .fill(viewModel.hasFile && !viewModel.isConverting
-                      ? Color(red: 0.2, green: 0.25, blue: 0.3)
-                      : Color.secondary.opacity(0.3))
-        )
-        .contentShape(Rectangle())
-        .disabled(!viewModel.hasFile || viewModel.isConverting)
-    }
-
-    // MARK: - Drop Zone
-
-    private var dropZone: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: Design.Radius.lg)
-                .fill(viewModel.hasFile
-                      ? Color(NSColor.controlBackgroundColor)
-                      : Color(red: 0.55, green: 0.58, blue: 0.62))
-                .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 1)
-
-            RoundedRectangle(cornerRadius: Design.Radius.lg)
-                .stroke(
-                    viewModel.hasFile ? Color(red: 0.2, green: 0.25, blue: 0.3).opacity(0.6) : Color.white.opacity(0.15),
-                    style: StrokeStyle(lineWidth: 1.5, dash: viewModel.hasFile ? [] : [6])
-                )
-
+    private var fileZone: some View {
+        Group {
             if viewModel.hasFile {
-                if viewModel.isSingleFile {
-                    singleFileInfoView
-                } else {
-                    multiFileInfoView
-                }
+                fileCard
             } else {
                 emptyDropZone
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: Design.Space.xxl + Design.Space.sm)
         .onDrop(of: [UTType.pdf], isTargeted: nil) { providers in
             viewModel.handleDroppedFiles(providers)
             return true
         }
     }
 
+    private let dropZoneHeight: CGFloat = 84
+
     private var emptyDropZone: some View {
-        VStack(spacing: Design.Space.xs) {
+        VStack(spacing: UI.Spacing.sm) {
             Image(systemName: "doc.badge.arrow.up")
-                .font(.system(size: Design.Icon.lg))
+                .font(.system(size: 32))
                 .foregroundColor(.white.opacity(0.7))
 
-            Text("Drop your PDFs here")
-                .font(.system(size: Design.Font.body))
+            Text("Drop PDF here")
+                .font(.system(size: UI.Font.body))
                 .foregroundColor(.white.opacity(0.7))
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: dropZoneHeight)
+        .background(
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .fill(Color(red: 0.55, green: 0.58, blue: 0.62))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .stroke(Color.white.opacity(0.15), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
+        )
     }
 
-    private var singleFileInfoView: some View {
-        HStack(spacing: Design.Space.sm) {
-            Image(systemName: "doc.fill")
-                .font(.system(size: Design.Icon.lg))
-                .foregroundColor(Color(red: 0.2, green: 0.25, blue: 0.3))
+    private var fileCard: some View {
+        HStack(spacing: UI.Spacing.md) {
+            PDFIconView()
 
-            VStack(alignment: .leading, spacing: Design.Space.xxs) {
-                Text(viewModel.originalFileName)
-                    .font(.system(size: Design.Font.body, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Text("Original size: \(SquishPDFViewModel.formatFileSize(viewModel.originalFileSize))")
-                    .font(.system(size: Design.Font.caption))
-                    .foregroundColor(.secondary)
-                if let analysis = viewModel.pdfAnalysis, analysis.imageCount > 0 {
-                    Text("Est. image quality: ~\(analysis.avgDPI) DPI")
-                        .font(.system(size: Design.Font.caption))
-                        .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: UI.Spacing.xxs) {
+                if viewModel.fileCount > 1 {
+                    // Multiple files
+                    Text("\(viewModel.fileCount) files selected")
+                        .font(.system(size: UI.Font.body, weight: .medium))
+                        .foregroundColor(UI.Color.textPrimary)
+
+                    Text(SquishPDFViewModel.formatFileSize(viewModel.totalFileSize))
+                        .font(.system(size: UI.Font.caption))
+                        .foregroundColor(UI.Color.textSecondary)
+                } else {
+                    // Single file
+                    Text(viewModel.originalFileName)
+                        .font(.system(size: UI.Font.body, weight: .medium))
+                        .foregroundColor(UI.Color.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    HStack(spacing: UI.Spacing.xs) {
+                        Text(SquishPDFViewModel.formatFileSize(viewModel.originalFileSize))
+                            .font(.system(size: UI.Font.caption))
+                            .foregroundColor(UI.Color.textSecondary)
+
+                        if let analysis = viewModel.pdfAnalysis, analysis.imageCount > 0 {
+                            Circle()
+                                .fill(UI.Color.textTertiary)
+                                .frame(width: 3, height: 3)
+                            Text("~\(analysis.avgDPI) DPI")
+                                .font(.system(size: UI.Font.caption))
+                                .foregroundColor(UI.Color.textSecondary)
+                        }
+                    }
                 }
             }
 
             Spacer()
 
             Button(action: { viewModel.clearFile() }) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: Design.Icon.sm))
-                    .foregroundColor(.secondary.opacity(0.6))
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(UI.Color.textTertiary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("Remove file")
+            .background(Color.clear)
         }
-        .padding(.horizontal, Design.Space.md)
+        .padding(.horizontal, UI.Spacing.lg)
+        .frame(maxWidth: .infinity)
+        .frame(height: dropZoneHeight)
+        .background(
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .fill(UI.Color.cardBackground)
+                .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
+        )
     }
 
-    private var multiFileInfoView: some View {
-        HStack(spacing: Design.Space.sm) {
-            Image(systemName: "doc.on.doc.fill")
-                .font(.system(size: Design.Icon.lg))
-                .foregroundColor(Color(red: 0.2, green: 0.25, blue: 0.3))
+    // MARK: - Mode Toggle
 
-            VStack(alignment: .leading, spacing: Design.Space.xxs) {
-                Text("\(viewModel.fileCount) files selected")
-                    .font(.system(size: Design.Font.body, weight: .medium))
-                    .foregroundColor(.primary)
-                Text("Total size: \(SquishPDFViewModel.formatFileSize(viewModel.totalFileSize))")
-                    .font(.system(size: Design.Font.caption))
-                    .foregroundColor(.secondary)
-                Text(fileListSummary)
-                    .font(.system(size: Design.Font.caption))
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-            }
-
+    private var modeToggle: some View {
+        HStack {
             Spacer()
 
-            Button(action: { viewModel.clearFile() }) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: Design.Icon.sm))
-                    .foregroundColor(.secondary.opacity(0.6))
+            Picker("", selection: $viewModel.isBatchMode) {
+                Text("Single file").tag(false)
+                Text("Batch").tag(true)
             }
-            .buttonStyle(.plain)
-            .help("Remove all files")
-        }
-        .padding(.horizontal, Design.Space.md)
-    }
-
-    private var fileListSummary: String {
-        let names = viewModel.droppedFileURLs.map { $0.lastPathComponent }
-        if names.count <= 3 {
-            return names.joined(separator: ", ")
-        } else {
-            let first3 = names.prefix(3).joined(separator: ", ")
-            return "\(first3), +\(names.count - 3) more"
+            .pickerStyle(.segmented)
+            .frame(width: 160)
         }
     }
 
-    // MARK: - Status Messages
+    // MARK: - Presets Section
+
+    private var presetsSection: some View {
+        VStack(alignment: .leading, spacing: UI.Spacing.sm) {
+            Text("STANDARD")
+                .font(.system(size: UI.Font.caption, weight: .medium))
+                .foregroundColor(UI.Color.textTertiary)
+                .tracking(0.5)
+
+            VStack(spacing: UI.Spacing.xs) {
+                ForEach(CompressionPreset.standardPresets, id: \.id) { preset in
+                    PresetRowView(
+                        preset: preset,
+                        isSelected: viewModel.isBatchMode
+                            ? viewModel.isNativePresetSelected(preset)
+                            : viewModel.selectedNativePreset == preset,
+                        isCheckbox: viewModel.isBatchMode
+                    ) {
+                        if viewModel.isBatchMode {
+                            viewModel.toggleNativePreset(preset)
+                        } else {
+                            viewModel.selectNativePreset(preset)
+                        }
+                    }
+                }
+            }
+
+            // Specialized presets
+            Text("SPECIALIZED")
+                .font(.system(size: UI.Font.caption, weight: .medium))
+                .foregroundColor(UI.Color.textTertiary)
+                .tracking(0.5)
+                .padding(.top, UI.Spacing.sm)
+
+            VStack(spacing: UI.Spacing.xs) {
+                ForEach(CompressionPreset.specializedPresets, id: \.id) { preset in
+                    PresetRowView(
+                        preset: preset,
+                        isSelected: viewModel.isBatchMode
+                            ? viewModel.isNativePresetSelected(preset)
+                            : viewModel.selectedNativePreset == preset,
+                        isCheckbox: viewModel.isBatchMode
+                    ) {
+                        if viewModel.isBatchMode {
+                            viewModel.toggleNativePreset(preset)
+                        } else {
+                            viewModel.selectNativePreset(preset)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Status Area
 
     @ViewBuilder
-    private var statusMessages: some View {
+    private var statusArea: some View {
         if let success = viewModel.conversionSuccess {
-            HStack(spacing: Design.Space.xs) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-
-                Button(action: { viewModel.openOutputFile() }) {
-                    Text(success)
-                        .font(.system(size: Design.Font.label))
-                        .underline()
-                        .foregroundColor(.green)
-                }
-                .buttonStyle(.plain)
-                .help("Click to open file")
-
-                Button(action: { viewModel.revealOutputInFinder() }) {
-                    Image(systemName: "folder")
-                        .font(.system(size: Design.Font.label))
-                        .foregroundColor(.green.opacity(0.7))
-                }
-                .buttonStyle(.plain)
-                .help("Reveal in Finder")
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-        }
-
-        if let error = viewModel.lastError {
-            HStack(spacing: Design.Space.xs) {
+            // Parse the success message to extract percentage and size
+            let (percent, size) = parseSuccessMessage(success)
+            SuccessBannerView(
+                reductionPercent: percent,
+                outputSize: size,
+                onShow: { viewModel.revealOutputInFinder() }
+            )
+        } else if let error = viewModel.lastError {
+            HStack(spacing: UI.Spacing.xs) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.orange)
                 Text(error)
-                    .font(.system(size: Design.Font.label))
+                    .font(.system(size: UI.Font.caption))
+                    .foregroundColor(.orange)
             }
-            .foregroundColor(.orange)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
+            .padding(.vertical, UI.Spacing.sm)
         }
+    }
 
-        if !viewModel.isEngineAvailable {
-            HStack(spacing: Design.Space.xxs) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                if activeBackend == .ghostscript {
-                    Text("Ghostscript not found. Install with: brew install ghostscript")
-                        .font(.system(size: Design.Font.caption))
-                } else {
-                    Text("Compression engine unavailable")
-                        .font(.system(size: Design.Font.caption))
+    private func parseSuccessMessage(_ message: String) -> (Int, String) {
+        // Parse "Saved: filename\n936 KB (95% smaller)" format
+        let lines = message.components(separatedBy: "\n")
+        if lines.count >= 2 {
+            let sizeLine = lines[1]
+            // Extract size (everything before the parenthesis)
+            if let parenIndex = sizeLine.firstIndex(of: "(") {
+                let sizeStr = String(sizeLine[..<parenIndex]).trimmingCharacters(in: .whitespaces)
+                // Extract percentage
+                if let percentRange = sizeLine.range(of: #"(\d+)%"#, options: .regularExpression) {
+                    let percentStr = sizeLine[percentRange].dropLast()
+                    return (Int(percentStr) ?? 0, sizeStr)
                 }
             }
-            .foregroundColor(.orange)
-            .padding(Design.Space.xs)
-            .background(Color.orange.opacity(0.1))
-            .cornerRadius(Design.Radius.sm)
         }
+        return (0, "")
+    }
+
+    // MARK: - Info Text
+
+    private var infoText: some View {
+        Text("Original file will not be modified")
+            .font(.system(size: UI.Font.caption))
+            .foregroundColor(UI.Color.textSecondary)
+    }
+
+    // MARK: - Compress Button
+
+    private var compressButton: some View {
+        Button(action: { viewModel.convert() }) {
+            HStack(spacing: UI.Spacing.xs) {
+                if viewModel.isConverting {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .frame(width: 16, height: 16)
+                    if let message = viewModel.progressMessage {
+                        Text(message)
+                            .font(.system(size: UI.Font.title, weight: .semibold))
+                    } else {
+                        Text("Compressing...")
+                            .font(.system(size: UI.Font.title, weight: .semibold))
+                    }
+                } else {
+                    Text("Compress PDF")
+                        .font(.system(size: UI.Font.title, weight: .semibold))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .foregroundColor(.white)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: UI.Radius.lg)
+                .fill(
+                    viewModel.hasFile && !viewModel.isConverting
+                        ? LinearGradient(
+                            colors: [Color(red: 0.23, green: 0.23, blue: 0.24), Color(red: 0.11, green: 0.11, blue: 0.12)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                          )
+                        : LinearGradient(
+                            colors: [Color.secondary.opacity(0.3), Color.secondary.opacity(0.3)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                          )
+                )
+                .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
+        )
+        .disabled(!viewModel.hasFile || viewModel.isConverting)
     }
 }

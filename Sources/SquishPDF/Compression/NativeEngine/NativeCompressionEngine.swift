@@ -41,6 +41,7 @@ class NativeCompressionEngine: CompressionEngine {
                 source: input,
                 targetDPI: preset.targetDPI,
                 jpegQuality: preset.jpegQuality,
+                grayscale: preset.isGrayscale,
                 output: output
             ) { current, total in
                 progress(CompressionProgress(

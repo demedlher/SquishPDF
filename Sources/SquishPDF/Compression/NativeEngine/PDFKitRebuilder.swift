@@ -13,6 +13,7 @@ class PDFKitRebuilder {
         source: URL,
         targetDPI: Int,
         jpegQuality: Double,
+        grayscale: Bool = false,
         output: URL,
         progress: @escaping (Int, Int) -> Void
     ) throws {
@@ -39,7 +40,7 @@ class PDFKitRebuilder {
             let renderHeight = bounds.height * scale
 
             // Render page to image
-            guard let image = renderPageToImage(page: page, size: CGSize(width: renderWidth, height: renderHeight)) else {
+            guard let image = renderPageToImage(page: page, size: CGSize(width: renderWidth, height: renderHeight), grayscale: grayscale) else {
                 continue
             }
 
@@ -87,12 +88,20 @@ class PDFKitRebuilder {
     }
 
     /// Render a PDF page to a CGImage
-    private func renderPageToImage(page: PDFPage, size: CGSize) -> CGImage? {
+    private func renderPageToImage(page: PDFPage, size: CGSize, grayscale: Bool = false) -> CGImage? {
         let bounds = page.bounds(for: .mediaBox)
         let scale = size.width / bounds.width
 
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+        let colorSpace: CGColorSpace
+        let bitmapInfo: UInt32
+
+        if grayscale {
+            colorSpace = CGColorSpaceCreateDeviceGray()
+            bitmapInfo = CGImageAlphaInfo.none.rawValue
+        } else {
+            colorSpace = CGColorSpaceCreateDeviceRGB()
+            bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+        }
 
         guard let context = CGContext(
             data: nil,
@@ -107,7 +116,11 @@ class PDFKitRebuilder {
         }
 
         // White background
-        context.setFillColor(CGColor.white)
+        if grayscale {
+            context.setFillColor(gray: 1.0, alpha: 1.0)
+        } else {
+            context.setFillColor(CGColor.white)
+        }
         context.fill(CGRect(origin: .zero, size: size))
 
         // Scale and draw

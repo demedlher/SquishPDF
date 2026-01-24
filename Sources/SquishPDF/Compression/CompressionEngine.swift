@@ -30,7 +30,36 @@ struct CompressionPreset: Identifiable, Hashable {
         targetDPI: 300, jpegQuality: 0.95
     )
 
-    static let all: [CompressionPreset] = [.tiny, .small, .medium, .large, .xlarge]
+    // Specialized presets
+    static let grayscale = CompressionPreset(
+        id: "grayscale", displayName: "Grayscale", description: "Converts to grayscale, medium quality",
+        targetDPI: 150, jpegQuality: 0.7, isGrayscale: true
+    )
+    static let web = CompressionPreset(
+        id: "web", displayName: "Web", description: "Web-optimized, stripped metadata (72 DPI)",
+        targetDPI: 72, jpegQuality: 0.6
+    )
+
+    /// Whether to convert to grayscale
+    let isGrayscale: Bool
+
+    init(id: String, displayName: String, description: String, targetDPI: Int, jpegQuality: Double, isGrayscale: Bool = false) {
+        self.id = id
+        self.displayName = displayName
+        self.description = description
+        self.targetDPI = targetDPI
+        self.jpegQuality = jpegQuality
+        self.isGrayscale = isGrayscale
+    }
+
+    /// Standard quality presets
+    static let standardPresets: [CompressionPreset] = [.tiny, .small, .medium, .large]
+
+    /// Specialized presets
+    static let specializedPresets: [CompressionPreset] = [.grayscale, .web]
+
+    /// All presets
+    static let all: [CompressionPreset] = standardPresets + [.xlarge]
 }
 
 /// Progress information during compression
