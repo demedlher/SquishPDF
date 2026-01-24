@@ -151,9 +151,9 @@ brew install ghostscript
 
 ## License
 
-**AGPL-3.0** - see [LICENSE](LICENSE)
+**Proprietary** - Copyright (c) 2024-2026 Demed L'Her. All Rights Reserved.
 
-This application bundles Ghostscript, also licensed under AGPL-3.0.
+See [LICENSE](LICENSE) for details.
 
 ## Author
 
