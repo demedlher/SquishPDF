@@ -21,7 +21,9 @@ class PDFKitRebuilder {
         }
 
         let pageCount = document.pageCount
-        let newDocument = PDFDocument()
+
+        // Collect all page data first
+        var pageDataArray: [(bounds: CGRect, jpegData: Data)] = []
 
         for pageIndex in 0..<pageCount {
             progress(pageIndex + 1, pageCount)
@@ -46,24 +48,42 @@ class PDFKitRebuilder {
                 continue
             }
 
-            // Create new PDF page from JPEG
-            guard let jpegImage = NSImage(data: jpegData) else { continue }
-
-            // IMPORTANT: Set the image size to original page bounds
-            // This makes the image display at the original page size
-            // while retaining the higher resolution pixels
-            jpegImage.size = NSSize(width: bounds.width, height: bounds.height)
-
-            // Create a PDF page from the properly-sized image
-            guard let newPage = PDFPage(image: jpegImage) else { continue }
-
-            newDocument.insert(newPage, at: pageIndex)
+            pageDataArray.append((bounds: bounds, jpegData: jpegData))
         }
 
-        // Save document
-        guard newDocument.write(to: output) else {
+        // Create PDF using CGContext to ensure proper page sizing
+        try createPDFFromJPEGPages(pageDataArray, output: output)
+    }
+
+    /// Create a PDF file from JPEG data with explicit page bounds
+    private func createPDFFromJPEGPages(_ pages: [(bounds: CGRect, jpegData: Data)], output: URL) throws {
+        // Create PDF context
+        guard let pdfContext = CGContext(output as CFURL, mediaBox: nil, nil) else {
             throw CompressionError.outputWriteFailed(output)
         }
+
+        for (bounds, jpegData) in pages {
+            // Create image from JPEG data
+            guard let dataProvider = CGDataProvider(data: jpegData as CFData),
+                  let jpegImage = CGImage(jpegDataProviderSource: dataProvider,
+                                          decode: nil,
+                                          shouldInterpolate: true,
+                                          intent: .defaultIntent) else {
+                continue
+            }
+
+            // Begin page with original bounds
+            var mediaBox = bounds
+            pdfContext.beginPage(mediaBox: &mediaBox)
+
+            // Draw JPEG image to fill the entire page bounds
+            // The image will be scaled from its pixel dimensions to fill the page
+            pdfContext.draw(jpegImage, in: bounds)
+
+            pdfContext.endPage()
+        }
+
+        pdfContext.closePDF()
     }
 
     /// Render a PDF page to a CGImage
