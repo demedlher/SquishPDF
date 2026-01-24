@@ -49,15 +49,15 @@ class PDFKitRebuilder {
             // Create new PDF page from JPEG
             guard let jpegImage = NSImage(data: jpegData) else { continue }
 
-            // Create a PDF page that displays at original size
-            let newPage = PDFPage(image: jpegImage)
+            // IMPORTANT: Set the image size to original page bounds
+            // This makes the image display at the original page size
+            // while retaining the higher resolution pixels
+            jpegImage.size = NSSize(width: bounds.width, height: bounds.height)
 
-            // Set the page bounds to original size
-            newPage?.setBounds(bounds, for: .mediaBox)
+            // Create a PDF page from the properly-sized image
+            guard let newPage = PDFPage(image: jpegImage) else { continue }
 
-            if let newPage = newPage {
-                newDocument.insert(newPage, at: pageIndex)
-            }
+            newDocument.insert(newPage, at: pageIndex)
         }
 
         // Save document
