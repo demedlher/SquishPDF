@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Use the custom SquishPDF icon
-SOURCE_ICON="images/SquishPDF-icon-square.png"
+# Use the custom SquishPDF squid icon
+SOURCE_ICON="images/squishPDF-squid-icon.png"
 
 if [ ! -f "$SOURCE_ICON" ]; then
     echo "Error: Icon source not found at $SOURCE_ICON"
