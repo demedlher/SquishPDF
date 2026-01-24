@@ -4,17 +4,21 @@
 set -e
 
 # Parse arguments
-BUNDLE_GS=true
+# v4.0+: Native compression is default (no Ghostscript, App Store compatible)
+# Use --with-gs only for legacy Ghostscript builds (AGPL licensed)
+BUNDLE_GS=false
 DMG_SUFFIX=""
 
 for arg in "$@"; do
     case $arg in
-        --no-gs)
-            BUNDLE_GS=false
-            DMG_SUFFIX="_Lean"
-            ;;
         --with-gs)
             BUNDLE_GS=true
+            DMG_SUFFIX="_GS"
+            echo "WARNING: Building with Ghostscript (AGPL licensed - not for commercial distribution)"
+            ;;
+        --no-gs)
+            # Legacy flag, now the default
+            BUNDLE_GS=false
             DMG_SUFFIX=""
             ;;
         *)
@@ -36,8 +40,10 @@ sed -i '' "s/static let build = [0-9]*/static let build = $NEW_BUILD/" "$VERSION
 sed -i '' "s/static let commit = \"[^\"]*\"/static let commit = \"$GIT_COMMIT\"/" "$VERSION_FILE"
 
 echo "=== Building SquishPDF v${CURRENT_VERSION}.${NEW_BUILD} (${GIT_COMMIT}) ==="
-if [ "$BUNDLE_GS" = false ]; then
-    echo "    (Lean - without Ghostscript)"
+if [ "$BUNDLE_GS" = true ]; then
+    echo "    (Ghostscript build - AGPL licensed)"
+else
+    echo "    (Native build - commercially distributable)"
 fi
 
 # Build the Swift package
@@ -82,9 +88,9 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.9</string>
+    <string>${CURRENT_VERSION}</string>
     <key>CFBundleVersion</key>
-    <string>2.9.0</string>
+    <string>${CURRENT_VERSION}.${NEW_BUILD}</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
@@ -92,7 +98,7 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
     <key>CFBundleDisplayName</key>
     <string>SquishPDF</string>
     <key>CFBundleGetInfoString</key>
-    <string>SquishPDF v2.9 - Powered by Ghostscript</string>
+    <string>SquishPDF v${CURRENT_VERSION} - Native PDF Compression</string>
 </dict>
 </plist>
 EOF
@@ -112,13 +118,14 @@ fi
 # Create licenses directory
 mkdir -p "$RESOURCES_DIR/LICENSES"
 
-# Copy MIT license
+# Copy app license
 if [ -f "LICENSE" ]; then
     cp LICENSE "$RESOURCES_DIR/LICENSES/SquishPDF-LICENSE.txt"
 fi
 
-# Add Ghostscript license notice
-cat > "$RESOURCES_DIR/LICENSES/Ghostscript-LICENSE.txt" << EOF
+# Add Ghostscript license notice only if bundling GS
+if [ "$BUNDLE_GS" = true ]; then
+    cat > "$RESOURCES_DIR/LICENSES/Ghostscript-LICENSE.txt" << EOF
 Ghostscript is licensed under the GNU Affero General Public License (AGPL) version 3.
 
 Copyright (C) 2001-2025 Artifex Software, Inc.
@@ -128,6 +135,7 @@ For full license text, see: https://www.ghostscript.com/licensing/
 
 For commercial licensing inquiries, contact Artifex Software.
 EOF
+fi
 
 # Set permissions
 chmod 755 "$APP_BUNDLE"
@@ -146,7 +154,7 @@ echo ""
 echo "=== Build complete! ==="
 echo "App bundle: $APP_BUNDLE"
 if [ "$BUNDLE_GS" = true ]; then
-    echo "DMG installer: SquishPDF_Installer.dmg (with Ghostscript bundled)"
+    echo "DMG installer: SquishPDF_Installer_GS.dmg (with Ghostscript - AGPL licensed)"
 else
-    echo "DMG installer: SquishPDF_Installer_Lean.dmg (requires: brew install ghostscript)"
+    echo "DMG installer: SquishPDF_Installer.dmg (Native compression - commercially distributable)"
 fi
