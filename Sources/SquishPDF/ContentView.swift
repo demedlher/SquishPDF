@@ -69,7 +69,41 @@ struct PresetRowView: View {
     let preset: CompressionPreset
     let isSelected: Bool
     let isCheckbox: Bool
+    let effectiveness: SquishPDFViewModel.CompressionEffectiveness?
     let action: () -> Void
+
+    @State private var isHovering = false
+
+    private var effectivenessColor: Color {
+        guard let eff = effectiveness else {
+            return isSelected ? UI.Color.accent : UI.Color.textTertiary
+        }
+        switch eff {
+        case .definite: return Color(red: 0.2, green: 0.78, blue: 0.35)  // Green
+        case .marginal: return Color(red: 1.0, green: 0.75, blue: 0.0)   // Yellow/Orange
+        case .unlikely: return Color(red: 0.95, green: 0.4, blue: 0.4)   // Red
+        }
+    }
+
+    private var effectivenessBackground: Color {
+        guard let eff = effectiveness else {
+            return isSelected ? UI.Color.accent.opacity(0.1) : Color.black.opacity(0.04)
+        }
+        switch eff {
+        case .definite: return Color(red: 0.2, green: 0.78, blue: 0.35).opacity(0.15)
+        case .marginal: return Color(red: 1.0, green: 0.75, blue: 0.0).opacity(0.15)
+        case .unlikely: return Color(red: 0.95, green: 0.4, blue: 0.4).opacity(0.15)
+        }
+    }
+
+    private var effectivenessTooltip: String? {
+        guard let eff = effectiveness else { return nil }
+        switch eff {
+        case .definite: return "Will compress well"
+        case .marginal: return "Might compress some"
+        case .unlikely: return "Unlikely to compress"
+        }
+    }
 
     var body: some View {
         Button(action: action) {
@@ -117,13 +151,13 @@ struct PresetRowView: View {
 
                 Spacer()
 
-                // DPI Badge
+                // DPI Badge with effectiveness color
                 Text("\(preset.targetDPI) DPI")
                     .font(.system(size: UI.Font.caption, weight: .medium))
-                    .foregroundColor(isSelected ? UI.Color.accent : UI.Color.textTertiary)
+                    .foregroundColor(effectivenessColor)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(isSelected ? UI.Color.accent.opacity(0.1) : Color.black.opacity(0.04))
+                    .background(effectivenessBackground)
                     .cornerRadius(UI.Radius.sm)
             }
             .padding(.vertical, UI.Spacing.md)
@@ -143,6 +177,26 @@ struct PresetRowView: View {
             RoundedRectangle(cornerRadius: UI.Radius.lg)
                 .fill(isSelected ? UI.Color.selectionBackground : Color.clear)
         )
+        .clipped(antialiased: false)
+        .clipShape(RoundedRectangle(cornerRadius: UI.Radius.lg))
+        .overlay(alignment: .topTrailing) {
+            // Tooltip outside the clipping area
+            if isHovering, let tooltip = effectivenessTooltip {
+                Text(tooltip)
+                    .font(.system(size: 11))
+                    .foregroundColor(UI.Color.textPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .cornerRadius(4)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    .offset(x: -10, y: -24)
+                    .fixedSize()
+            }
+        }
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 }
 
@@ -358,7 +412,8 @@ struct ContentView: View {
                         isSelected: viewModel.isBatchMode
                             ? viewModel.isNativePresetSelected(preset)
                             : viewModel.selectedNativePreset == preset,
-                        isCheckbox: viewModel.isBatchMode
+                        isCheckbox: viewModel.isBatchMode,
+                        effectiveness: viewModel.nativePresetEffectiveness(preset)
                     ) {
                         if viewModel.isBatchMode {
                             viewModel.toggleNativePreset(preset)
@@ -383,7 +438,8 @@ struct ContentView: View {
                         isSelected: viewModel.isBatchMode
                             ? viewModel.isNativePresetSelected(preset)
                             : viewModel.selectedNativePreset == preset,
-                        isCheckbox: viewModel.isBatchMode
+                        isCheckbox: viewModel.isBatchMode,
+                        effectiveness: viewModel.nativePresetEffectiveness(preset)
                     ) {
                         if viewModel.isBatchMode {
                             viewModel.toggleNativePreset(preset)

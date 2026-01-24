@@ -4,13 +4,13 @@ import Foundation
 /// Updated automatically by build_app.sh before each installer build
 struct AppVersion {
     /// Marketing version (shown prominently)
-    static let version = "3.1"
+    static let version = "4.0"
 
     /// Build number (patch version, incremented with each installer build)
-    static let build = 16
+    static let build = 2
 
     /// Git commit hash (short)
-    static let commit = "bd17762"
+    static let commit = "3414aa7"
 
     /// Full version string for display
     static var fullVersion: String {

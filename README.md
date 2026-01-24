@@ -2,33 +2,32 @@
 
 Simple, no-frills, yet highly effective PDF compression for macOS. Drop the file, select the compression level, convert — done. No sprawling settings. No confusing menus. Just results.
 
-## What's New in v3.1
+## What's New in v4.0
 
-- **Multi-file batch processing** - Drop multiple PDFs and process them all at once
-- **Multi-preset selection** - Select multiple compression presets to create different versions in one pass
-- **Visual compression indicators** - 3-segment gauge shows compression potential at a glance (green = will compress, orange = might compress, red = unlikely)
-- **PDF quality analysis** - Detects source DPI and displays quality assessment with compression guidance
-- **Instant tooltips** - Hover over indicators for quick explanations
+- **Redesigned UI** - Clean, modern interface with improved visual hierarchy
+- **Native compression engine** - New Apple-native compression option (no external dependencies) for App Store compatibility
+- **Specialized presets** - Grayscale and Web-optimized compression options
+- **Single/Batch mode toggle** - Switch between single file and batch processing with a segmented control
+- **Effectiveness indicators** - Color-coded DPI badges show compression potential (green = will compress, yellow = might compress, red = unlikely)
+- **Hover tooltips** - Hover over presets to see compression guidance
 
 | Light Mode | Dark Mode |
 |:----------:|:---------:|
-| ![Light Mode](screenshots/squishPDF-batch-conversion-light-v3.1.png) | ![Dark Mode](screenshots/squishPDF-conversion-dark-v2.10.png) |
+| ![Light Mode](screenshots/squishPDF-light-v4.0.png) | ![Dark Mode](screenshots/squishPDF-dark-v4.0.png) |
 
 ## Features
 
 - **Drag-and-drop** PDF file handling
-- **Seven compression presets** with different quality/size tradeoffs:
+- **Six compression presets** with different quality/size tradeoffs:
   - **Tiny** (36 DPI) - Extreme compression, maximum size reduction
   - **Small** (72 DPI) - Smallest file, for on-screen viewing
   - **Medium** (150 DPI) - Good quality for e-readers
   - **Large** (300 DPI) - High quality for printing
-  - **X-Large** - Maximum quality for commercial print
-  - **Grayscale** (source DPI) - Converts to grayscale while maintaining quality
-  - **Web** (72 DPI) - Web-optimized with stripped metadata and subset fonts
-- **Smart PDF analysis** - Detects image DPI and shows quality assessment with compression guidance
-- **Visual compression indicators** - 3-segment gauge on each preset shows compression potential
-- **Instant tooltips** - Hover over indicators for quick explanations
-- Text remains searchable and selectable after compression
+  - **Grayscale** (150 DPI) - Converts to grayscale while compressing
+  - **Web** (72 DPI) - Web-optimized with stripped metadata
+- **Smart PDF analysis** - Detects image DPI and shows quality assessment
+- **Color-coded effectiveness** - DPI badges change color based on compression potential
+- **Single/Batch mode** - Process one file or multiple files with multiple presets
 - Automatic file naming with preset suffix (e.g., `document-medium-150dpi.pdf`)
 
 ## Who is this app for?
@@ -45,7 +44,8 @@ If you've ever wondered why your 80-page presentation is still 45 MB after "comp
 
 ### macOS
 - macOS 13.0 or later
-- Ghostscript (bundled in app, or install via `brew install ghostscript`)
+- Native version: No additional dependencies
+- Ghostscript version: Ghostscript (bundled in app, or install via `brew install ghostscript`)
 
 ## Installation
 
@@ -55,8 +55,8 @@ Download from the [Releases](https://github.com/demedlher/SquishPDF/releases) pa
 
 | Installer | Size | Description |
 |-----------|------|-------------|
-| `SquishPDF_Installer_Full.dmg` | ~22 MB | Includes Ghostscript — works out of the box |
-| `SquishPDF_Installer_Lean.dmg` | ~3 MB | Requires `brew install ghostscript` first |
+| `SquishPDF_v4.0_Full.dmg` | ~22 MB | Includes Ghostscript — text remains selectable |
+| `SquishPDF_v4.0_Lean.dmg` | ~3 MB | Requires `brew install ghostscript` first |
 
 Open the DMG and drag SquishPDF to your Applications folder.
 
@@ -81,8 +81,8 @@ cd SquishPDF
 
 1. Launch SquishPDF
 2. Drag and drop a PDF file onto the drop zone
-3. Select your desired compression preset
-4. Click Convert
+3. Select your desired compression preset (color indicates effectiveness)
+4. Click "Compress PDF"
 5. The compressed PDF will be saved in the same directory with a preset suffix
 
 ## Compression Comparison
@@ -93,8 +93,7 @@ cd SquishPDF
 | Small | 80-95% | Email attachments, web viewing |
 | Medium | 60-80% | E-readers, tablets |
 | Large | 30-60% | Office printing |
-| X-Large | 5-30% | Professional printing |
-| Grayscale | 30-50% | Graphics-heavy docs where color isn't needed (maintains quality) |
+| Grayscale | 50-70% | Graphics-heavy docs where color isn't needed |
 | Web | 80-95% | Web publishing, fast loading |
 
 ## Project Structure
@@ -106,7 +105,10 @@ SquishPDF/
 │   ├── ContentView.swift          # Main UI
 │   ├── SquishPDFViewModel.swift   # Conversion orchestration
 │   ├── GhostscriptService.swift   # Ghostscript wrapper
-│   └── DesignTokens.swift         # UI design system
+│   └── Compression/               # Compression engines
+│       ├── CompressionEngine.swift
+│       ├── GhostscriptEngine.swift
+│       └── NativeEngine/          # Apple-native compression
 ├── Package.swift                  # Swift package manifest
 ├── build_app.sh                   # macOS app bundle builder (--with-gs/--no-gs)
 ├── build_both.sh                  # Builds both Full and Lean installers
@@ -117,21 +119,19 @@ SquishPDF/
 
 ## Tech Stack
 
-### macOS (v3.1)
+### macOS (v4.0)
 - **Language**: Swift 5.9+
 - **Framework**: SwiftUI
-- **PDF Processing**: Ghostscript (bundled)
+- **PDF Processing**: Native (CoreGraphics/PDFKit) or Ghostscript
 - **Minimum OS**: macOS 13.0
 
 ## How It Works
 
-SquishPDF uses Ghostscript's PDF optimization engine which:
-- Downsamples images to target DPI
-- Compresses embedded fonts
-- Removes unused objects
-- Preserves text, vectors, and document structure
+SquishPDF offers two compression engines:
 
-Unlike rasterization approaches, text remains fully selectable and searchable.
+**Native Engine** (v4.0): Uses Apple's CoreGraphics and PDFKit to rasterize and recompress PDF pages. Fast and dependency-free, but text becomes non-selectable.
+
+**Ghostscript Engine**: Uses Ghostscript's PDF optimization which downsamples images, compresses fonts, and removes unused objects while preserving text selectability.
 
 ## Building from Source
 

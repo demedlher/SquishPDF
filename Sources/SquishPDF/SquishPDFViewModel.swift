@@ -128,6 +128,16 @@ class SquishPDFViewModel: ObservableObject {
         else { return .unlikely }
     }
 
+    func nativePresetEffectiveness(_ preset: CompressionPreset) -> CompressionEffectiveness? {
+        guard let analysis = pdfAnalysis, analysis.imageCount > 0 else { return nil }
+        if preset.isGrayscale { return .marginal }
+
+        let ratio = Double(preset.targetDPI) / Double(analysis.avgDPI)
+        if ratio < 0.6 { return .definite }
+        else if ratio < 1.2 { return .marginal }
+        else { return .unlikely }
+    }
+
     // MARK: - File Handling
 
     func handleDroppedFiles(_ providers: [NSItemProvider]) {
